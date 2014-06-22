@@ -169,6 +169,18 @@ private:
    MatrixXd Omega;
    VectorXd omega;
    void calcConstraints();
+   
+   /**
+    * A lower-triangular matrix, consisting of blocks of the identity matrix,
+    * for use in calculating: Omega_F = F * Idiag
+    */
+   MatrixXd Idiag;
+   void updateIdiag();
+   
+   // helper matrices
+   void calcHtQ();
+   MatrixXd HtQ;
+   MatrixXd DD;
 };
 
 #endif

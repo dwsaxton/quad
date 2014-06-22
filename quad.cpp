@@ -137,7 +137,7 @@ void Quad::setPropInput( int i, double o )
 
 void Quad::step()
 {
-   double period = World::self()->TsWorldActual();
+   double period = TsWorldTarget();
    
    // "target" step length
    double delta = 0.01;

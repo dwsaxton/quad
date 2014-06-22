@@ -15,9 +15,6 @@ using namespace QP;
 #include <iostream>
 using namespace std;
 
-const int CONTROLLER_HP = 10;
-const int CONTROLLER_HU = 3;
-
 LinearQuad linearize( const QuadState & qsx0, const Vector4d & u0 )
 {
    QuadModel model;

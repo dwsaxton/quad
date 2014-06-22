@@ -15,14 +15,6 @@ using namespace std;
 
 World* World::m_self = 0;
 
-// Number of times per second the quadrocopter is numerically stepped and IMU updated
-const int TsWorldMs = 12;
-double TsWorldTarget() { return TsWorldMs*1e-3; }
-
-// "Samping interval" Ts; the period of time each step of the controller corresponds to.
-const int TsControllerMs = 4*TsWorldMs;
-double TsControllerTarget() { return TsControllerMs*1e-3; }
-
 World::World()
 {
    assert( !m_self );
@@ -41,10 +33,6 @@ World::World()
    
    m_isRunning = false;
    m_sensorRequestDelay = 0;
-   m_lastControllerTime = 0;
-   m_lastWorldTime = 0;
-   m_tsControllerActual = 0;
-   m_tsWorldActual = 0;
    m_environment = Simulation;
    m_stepCount = 0;
    m_stepTimer = new QTimer(this);
@@ -83,12 +71,6 @@ void World::setEnvironment( Environment e )
    updateTimers();
 }
 
-// void World::stepIfReadings()
-// {
-//    if ( m_transceiver->trySensorReadings() )
-//       step();
-// }
-
 void World::step()
 {
    bool stepController = ( m_stepCount % (TsControllerMs / TsWorldMs) == 0 );
@@ -111,13 +93,7 @@ void World::step()
    }
    
    m_observer->step();
-   
    m_stepCount++;
-   
-   // Reset timers
-   getWorldTime();
-   if ( stepController )
-      getControllerTime();
 }
 
 double unifRand( double min, double max )
@@ -173,8 +149,6 @@ void World::runPause()
 //    else
    if (m_isRunning)
    {
-      getControllerTime();
-      getWorldTime();
 //       m_stepTimer->start( 1000 / WorldStepsPerSecond );
       
 //       if ( m_environment == Actual )
@@ -203,35 +177,4 @@ void World::setQuadInput( Vector4d u )
 	  m_simulatedQuad->setPropInput( u );
    else
    {} // TODO handle this
-}
-
-double currentTime()
-{
-   struct timeval t;
-   gettimeofday( &t, 0 );
-   int sec = t.tv_sec - 1403300000;
-   return sec + t.tv_usec*1e-6;
-}
-
-void World::getWorldTime()
-{
-   double t = currentTime();
-   m_tsWorldActual = t - m_lastWorldTime;
-   if ( m_tsWorldActual < 0 || m_tsWorldActual > 1 )
-   {
-      cout << "Warning: dodgy world time" << endl;
-      m_tsWorldActual = TsWorldTarget();
-   }
-   m_lastWorldTime = t;
-}
-void World::getControllerTime()
-{
-   double t = currentTime();
-   m_tsControllerActual = t - m_lastControllerTime;
-   if ( m_tsControllerActual < 0 || m_tsControllerActual > 1 )
-   {
-      cout << "Warning: dodgy controller time" << endl;
-      m_tsControllerActual = TsControllerTarget();
-   }
-   m_lastControllerTime = t;
 }

@@ -243,25 +243,42 @@ void Mpc::calc_phi()
    }
 }
 
+void Mpc::calcHtQ() {
+  int c = H.cols();
+  int r = H.rows();
+  if (HtQ.rows() != c || HtQ.cols() != r) {
+    HtQ = MatrixXd(c, r);
+  }
+  for (int j = 0; j < r; ++j) {
+    HtQ.col(j) = Q(j,j) * H.row(j).transpose();
+  }
+}
+
 void Mpc::calc_Phi()
 {
    if ( !QIsDiagonal )
 	  Phi = 2*(H.transpose() * Q * H + R);
    else
    {
-	  int c = H.cols();
-	  int r = H.rows();
-	  MatrixXd HtQ( c, r );
-	  for ( int i = 0; i < c; ++i )
-	  {
-		 for ( int j = 0; j < r; ++j )
-		 {
-			HtQ(i,j) = Q(j,j) * H(j,i);
-		 }
-	  }
-	  
-	  Phi = 2*(HtQ * H + R);
+     calcHtQ();
+	 Phi = 2*(HtQ * H + R);
    }
+}
+
+void Mpc::updateIdiag() {
+  if (Idiag.rows() == l*Hu) {
+    return;
+  }
+  Idiag = MatrixXd(l*Hu, l*Hu);
+  Idiag.setZero();
+  for ( int ii = 0; ii < Hu; ++ii )
+  {
+      for ( int jj = 0; jj <= ii; ++jj )
+      {
+        for ( int k = 0; k < l; ++k )
+            Idiag( ii*l+k, jj*l+k ) = 1;
+      }
+  }
 }
 
 void Mpc::calcConstraints()
@@ -279,16 +296,7 @@ void Mpc::calcConstraints()
    // F
    if ( F.rows() != 0 )
    {
-	  MatrixXd Idiag( l*Hu, l*Hu );
-	  Idiag.setZero();
-	  for ( int ii = 0; ii < Hu; ++ii )
-	  {
-		 for ( int jj = 0; jj <= ii; ++jj )
-		 {
-			for ( int k = 0; k < l; ++k )
-			   Idiag( ii*l+k, jj*l+k ) = 1;
-		 }
-	  }
+     updateIdiag();
 	  OmegaF = F * Idiag;
 	  
 	  VectorXd umconst( l*Hu );
@@ -301,13 +309,13 @@ void Mpc::calcConstraints()
    // G
    if ( G.rows() != 0 )
    {
-	  MatrixXd DD( m*Hp, l*Hu );
-	  VectorXd dd( m*Hp );
-	  
-	  for ( int k = 1; k <= Hp; ++k )
-	  {
+  
+      if (DD.rows() != m*Hp || DD.cols() != l*Hu) {
+        DD = MatrixXd(m*Hp, l*Hu);
+      }
+  
+	  for ( int k = 1; k <= Hp; ++k ) {
 		 DD.block( (k-1)*n, 0, m, l*Hu ) = CDk[k];
-// 		 dd.block( (k-1)*n, 0, m, l*Hu ) = d;
 	  }
 	  
 	  OmegaG = G * DD;

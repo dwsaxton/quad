@@ -6,11 +6,16 @@ using namespace Eigen;
 
 #include <QObject>
 
-// "Samping interval" Ts; the period of time each step of the controller corresponds to.
-double TsControllerTarget();
+// Number of times per second the quadrocopter is numerically stepped and IMU updated
+const int TsWorldMs = 12;
+inline double TsWorldTarget() { return TsWorldMs*1e-3; }
 
-// What is the time step of the world? How often the quadrocopter is numerically stepped, the IMU updated, etc.
-double TsWorldTarget();
+// "Samping interval" Ts; the period of time each step of the controller corresponds to.
+const int TsControllerMs = 8*TsWorldMs;
+inline double TsControllerTarget() { return TsControllerMs*1e-3; }
+
+const int CONTROLLER_HP = 5;
+const int CONTROLLER_HU = 3;
 
 class QTimer;
 
@@ -48,11 +53,6 @@ public:
    void setEnvironment( Environment e );
    Environment environment() const { return m_environment; }
    
-   // The actually number of elapsed seconds since the last time the controller step function was called
-   ///TODO Is the following function actually used? We could potentially get rid of it...
-   double TsControllerActual() const { return m_tsControllerActual; }
-   double TsWorldActual() const { return m_tsWorldActual; }
-   
 public Q_SLOTS:
    void reset();
    void runPause();
@@ -80,14 +80,6 @@ private:
    
    Environment m_environment;
    
-   /// Updates the controller time to the current time
-   void getControllerTime();
-   /// Updates the world time to the current time
-   void getWorldTime();
-   double m_lastControllerTime;
-   double m_lastWorldTime;
-   double m_tsControllerActual;
-   double m_tsWorldActual;
    int m_sensorRequestDelay;
    bool m_isRunning;
 };

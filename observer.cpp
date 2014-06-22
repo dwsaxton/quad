@@ -132,7 +132,7 @@ void Observer::stepSensors()
    
    Sensors *s = World::self()->sensors();
    
-   double tsWorld = World::self()->TsWorldActual();
+   double tsWorld = TsWorldTarget();
    
    m_a = s->readAccelerometer( tsWorld, &bias_scale, &bias_add );
    scale.segment( QUAD_STATE_SIZE, 3 ) = bias_scale;
@@ -309,7 +309,7 @@ ObserverState Observer::f( const ObserverState & x0 )
    // Best estimate of actual omega
    state.omega = g;
    
-   state = integrate( state, a, World::self()->TsWorldActual() );
+   state = integrate( state, a, TsWorldTarget() );
    
    ObserverState x1( state );
    x1.ba = x0.ba;
