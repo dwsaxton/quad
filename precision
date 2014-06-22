@@ -1,0 +1,39 @@
+#!/bin/sh
+sed -i 's/float/double/g' *.cpp
+sed -i 's/float/double/g' *.h
+
+sed -i 's/AngleAxisf/AngleAxisd/g' *.cpp
+sed -i 's/AngleAxisf/AngleAxisd/g' *.h
+
+sed -i 's/ArrayXf/ArrayXd/g' *.cpp
+sed -i 's/ArrayXf/ArrayXd/g' *.h
+
+sed -i 's/VectorXf/VectorXd/g' *.cpp
+sed -i 's/VectorXf/VectorXd/g' *h
+sed -i 's/MatrixXf/MatrixXd/g' *.cpp
+sed -i 's/MatrixXf/MatrixXd/g' *.h
+
+sed -i 's/Vector2f/Vector2d/g' *.cpp
+sed -i 's/Vector2f/Vector2d/g' *h
+sed -i 's/Matrix2f/Matrix2d/g' *.cpp
+sed -i 's/Matrix2f/Matrix2d/g' *.h
+                
+sed -i 's/Vector3f/Vector3d/g' *.cpp
+sed -i 's/Vector3f/Vector3d/g' *h
+sed -i 's/Matrix3f/Matrix3d/g' *.cpp
+sed -i 's/Matrix3f/Matrix3d/g' *.h
+                
+sed -i 's/Vector4f/Vector4d/g' *.cpp
+sed -i 's/Vector4f/Vector4d/g' *h
+sed -i 's/Matrix4f/Matrix4d/g' *.cpp
+sed -i 's/Matrix4f/Matrix4d/g' *.h
+
+sed -i 's/Quaternionf/Quaterniond/g' *.cpp
+sed -i 's/Quaternionf/Quaterniond/g' *.h
+
+sed -i 's/Matrixf/Matrixd/g' *.cpp
+sed -i 's/Matrixf/Matrixd/g' *.h
+
+sed -i 's/Translatef/Translated/g' *.cpp
+sed -i 's/Translatef/Translated/g' *.h
+

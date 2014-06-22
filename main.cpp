@@ -1,11 +1,17 @@
-#include <QtGui/QApplication>
-#include "Quad.h"
+#include <QApplication>
 
+#include "interface.h"
+#include "mpc.h"
+#include "qpsolver.h"
 
-int main(int argc, char** argv)
+int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    Quad foo;
-    foo.show();
-    return app.exec();
+//    mpcTest();
+    QP::test();
+//     exit(0);
+   
+   QApplication app(argc, argv);
+   Interface interface;
+   interface.show();
+   return app.exec();
 }
