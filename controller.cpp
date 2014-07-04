@@ -64,9 +64,6 @@ LinearQuad linearize( const QuadState & qsx0, const Vector4d & u0 )
          lq.Ac( i, j ) = d[i];
    }
    
-   // Pick a slightly bigger epsilon for propeller speeds?
-   epsilon = 0.1;
-   
    Vector4d u2;
    for ( int j = 0; j < 4; ++j )
    {
@@ -148,16 +145,14 @@ void Controller::step()
        cout << "Warning: not finite!" << endl;
        newu[i] = 0;
      } else if (newu[i] < 0) {
-//        cout << "newu["<<i<<"] = " << newu[i] << " < 0" << endl;
+       cout << "newu["<<i<<"] = " << newu[i] << " < 0" << endl;
        newu[i] = 0;
      } else if (newu[i] > 1) {
-//        cout << "newu["<<i<<"] = " << newu[i] << " > 1" << endl;
+       cout << "newu["<<i<<"] = " << newu[i] << " > 1" << endl;
        newu[i] = 1;
      }
    }
    World::self()->setQuadInput( newu );
-      
-//    cout << "du: " << du.transpose() << " newu: " << newu.transpose() << endl;
 
    m_pred_d = m_mpc.d;
    m_prev_u = newu;
@@ -166,18 +161,26 @@ void Controller::step()
 
 bool isPointingBadly(const QuadState &state) {
    double z = state.bodyToSpace(ez)(2);
-   double angle = acos(z);
-   return abs(angle) > 0.5;
+   return z < 0;
+}
+
+bool isSpinningTooFast(const QuadState &state) {
+  return state.omega.norm() > 10;
 }
 
 void Controller::updateControlledOutputs( const QuadState & state )
 {
-   if (!isPointingBadly(state)) {
-    updateControlledPosition(state);
-   } else {
-     cout << "Pointing Badly!" << endl;
-   }
-   updateControlledOrientation(state);
+  if (isSpinningTooFast(state)) {
+    updateToStopSpin(state);
+  }
+  else {
+    updateControlledOrientation(state);
+    if (!isPointingBadly(state)) {
+      updateControlledPosition(state);
+    } else {
+      cout << "Pointing Badly!" << endl;
+    }
+  }
 }
 
 // taken from http://stackoverflow.com/questions/1031005/is-there-an-algorithm-for-converting-quaternion-rotations-to-euler-angle-rotatio
@@ -257,12 +260,38 @@ void Controller::updateControlledOrientation( const QuadState & state )
 		 m_outputs[QuadState::StateIndexOrient + j].value[i] = q.coeffs()(j);
    }
 
+
+   // velocity decrease per time-step
+   double dv = 10 * TsControllerTarget();
    for ( int i = 0; i < 3; ++i )
    {
       m_outputs[QuadState::StateIndexVel+i].used = true;
       m_outputs[QuadState::StateIndexomega+i].used = true;
+//       m_outputs[QuadState::StateIndexPos+i].used = true;
       m_outputs[QuadState::StateIndexVel+i].weight = weight;
       m_outputs[QuadState::StateIndexomega+i].weight = weight;
+//       m_outputs[QuadState::StateIndexPos+i].weight = weight;
+      for (int j = 0; j < CONTROLLER_HP; ++j) {
+        m_outputs[QuadState::StateIndexPos+i].value[j] = state.pos.coeff(i); // maintain current position
+        double v = state.vel[i];
+        double jdv = dv * (j+1);
+        if (abs(jdv) > abs(v)) {
+          v = 0;
+        } else {
+          v -= (v > 0) ? jdv : -jdv;
+        }
+        m_outputs[QuadState::StateIndexVel+i].value[j] = v;
+      }
+   }
+}
+
+void Controller::updateToStopSpin(const QuadState &state) {
+   for ( int i = 0; i < 3; ++i ) {
+      m_outputs[QuadState::StateIndexomega+i].used = true;
+      m_outputs[QuadState::StateIndexomega+i].weight = 1;
+      for (int j = 0; j < CONTROLLER_HP; ++j) {
+        m_outputs[QuadState::StateIndexomega+i].value[j] = state.omega[i] + (state.omega[i] > 0 ? -(j+1) : (j+1));
+      }
    }
 }
 
@@ -270,17 +299,27 @@ void Controller::updateControlledPosition( const QuadState & state )
 {
    // Position
    m_outputs[QuadState::StateIndexPos+0].used = true;
-   m_outputs[QuadState::StateIndexPos+0].weight = 5;
+   m_outputs[QuadState::StateIndexPos+0].weight = 20;
    m_outputs[QuadState::StateIndexPos+1].used = true;
-   m_outputs[QuadState::StateIndexPos+1].weight = 5;
+   m_outputs[QuadState::StateIndexPos+1].weight = 20;
    m_outputs[QuadState::StateIndexPos+2].used = true;
-   m_outputs[QuadState::StateIndexPos+2].weight = 5;
+   m_outputs[QuadState::StateIndexPos+2].weight = 20;
+   
+   Vector3d targetPos;
+   targetPos << 0, 0, 12;
+   int maxSpeed = 20;
+   Vector3d offset = targetPos - state.pos;
+   double distanceToTarget = offset.norm();
+   double timeToTarget = distanceToTarget / maxSpeed;
    
    for ( int i = 0; i < CONTROLLER_HP; ++i )
    {
+     double t = (i+1) * TsControllerTarget();
+     double prop = min(1.0, t / timeToTarget);
+     Vector3d instantTarget = state.pos + prop * offset;
      for ( int coord = 0; coord < 3; ++coord )
      {
-       m_outputs[QuadState::StateIndexPos+coord].value[i] = (coord==2) ? 12 : 0;
+       m_outputs[QuadState::StateIndexPos+coord].value[i] = instantTarget.coeff(coord);
      }
    }
 }

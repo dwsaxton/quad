@@ -104,8 +104,7 @@ double unifRand( double min, double max )
 
 void World::stepWind()
 {
-   // No wind for now
-//    return;
+//    return; // No wind for now
    
    double maxWind = 1; // max number of newtons of force
    

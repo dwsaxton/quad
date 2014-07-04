@@ -69,11 +69,6 @@ QuadInfo QuadModel::calcInfo( const QuadState & state, const Vector4d & propInpu
    {
 	  info.F[i] = forceFromProp( propInput[i] );
 	  info.t[i] = torqueFromProp( propInput[i] );
-//       double o = Omega[i];
-//       info.t[i] = cT*o*o;
-//       info.F[i] = cF*o*o;
-// 	  info.t[i] = cT*o*80;
-// 	  info.F[i] = cF*o*80;
    }
    
    // Calculate force
@@ -81,7 +76,6 @@ QuadInfo QuadModel::calcInfo( const QuadState & state, const Vector4d & propInpu
    info.force.z() += info.F[0]+info.F[1]+info.F[2]+info.F[3];
    info.force -= M * g * state.spaceToBody( ez );
    info.force += state.spaceToBody( windForce );
-   
    
    // Calculate torque
    info.torque.setZero();
