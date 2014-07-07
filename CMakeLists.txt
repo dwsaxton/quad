@@ -6,7 +6,7 @@ find_package(OpenGL REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} /usr/include/eigen3)
 
 set(CMAKE_AUTOMOC ON)
-set(Quad_SRCS EigenQP.cpp sensors.cpp observer.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp world.cpp observer.cpp mpc.cpp controller.cpp main.cpp glquad.cpp)
+set(Quad_SRCS quadratic3d.cpp quadraticintercept.cpp rotationplanner.cpp highercontroller.cpp simplequadraticintercept.cpp EigenQP.cpp sensors.cpp observer.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp world.cpp observer.cpp mpc.cpp controller.cpp main.cpp glquad.cpp)
 set(Quad_FORMS interface.ui)
 QT4_WRAP_UI(Quad_FORMS_HEADERS ${Quad_FORMS})
 qt4_automoc(${Quad_SRCS})

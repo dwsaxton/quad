@@ -14,12 +14,12 @@ inline double TsWorldTarget() { return TsWorldMs*1e-3; }
 const int TsControllerMs = 8*TsWorldMs;
 inline double TsControllerTarget() { return TsControllerMs*1e-3; }
 
-const int CONTROLLER_HP = 5;
-const int CONTROLLER_HU = 3;
+const int CONTROLLER_HP = 1;
+const int CONTROLLER_HU = 1;
 
 class QTimer;
 
-class Controller;
+class HigherController;
 class Observer;
 class Quad;
 class Sensors;
@@ -38,7 +38,7 @@ public:
    
    static World *self() { return m_self; }
    
-   Controller *controller() const { return m_controller; }
+   HigherController *controller() const { return m_controller; }
    Observer *observer() const { return m_observer; }
    Sensors *sensors() const { return m_sensors; }
    Quad *simulatedQuad() const { return m_simulatedQuad; }
@@ -65,7 +65,7 @@ private:
    void updateTimers();
    static World *m_self;
    
-   Controller *m_controller;
+   HigherController *m_controller;
    Quad *m_simulatedQuad;
    Observer *m_observer;
    Sensors *m_sensors;

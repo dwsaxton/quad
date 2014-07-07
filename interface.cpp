@@ -1,6 +1,6 @@
 #include <QtGui>
 
-#include "controller.h"
+#include "highercontroller.h"
 #include "interface.h"
 #include "observer.h"
 #include "quad.h"

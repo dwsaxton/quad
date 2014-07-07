@@ -1,6 +1,6 @@
 #include "world.h"
 
-#include "controller.h"
+#include "highercontroller.h"
 #include "observer.h"
 #include "quad.h"
 #include "sensors.h"
@@ -26,7 +26,7 @@ World::World()
    m_wind.setZero();
    
    m_simulatedQuad = new Quad;
-   m_controller = new Controller;
+   m_controller = new HigherController;
    m_observer = new Observer;
    m_sensors = new Sensors;
 //    m_transceiver = new Transceiver;

@@ -11,6 +11,7 @@ using namespace QP;
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
 
+#include <cassert>
 #include <cmath>
 #include <iostream>
 using namespace std;
@@ -108,34 +109,16 @@ void ControlledOutput::setConstValue( double v )
 //BEGIN class Controller
 Controller::Controller()
 {
-   m_haveControl = false;
-   m_outputs.resize( QUAD_STATE_SIZE );
+//    m_haveControl = false;
+//    m_outputs.resize( QUAD_STATE_SIZE );
    initMpc();
 }
 
-
-Controller::~Controller()
+void Controller::step(const QVector< ControlledOutput >& next)
 {
-}
-
-
-void Controller::giveControl( bool haveControl )
-{
-   if ( m_haveControl == haveControl )
-	  return;
-   m_haveControl = haveControl;
-   
-   // Or about previous input...
+  assert(next.size() == QUAD_STATE_SIZE);
    m_prev_u = World::self()->simulatedQuad()->propInput();
-}
-
-
-void Controller::step()
-{
-   if ( !m_haveControl )
-      return;
-   
-   updateMpc();
+   updateMpc(next);
    VectorXd du = m_mpc.calc_du( &m_predX );
    VectorXd newu = m_prev_u + du;
 
@@ -159,170 +142,138 @@ void Controller::step()
 }
 
 
-bool isPointingBadly(const QuadState &state) {
-   double z = state.bodyToSpace(ez)(2);
-   return z < 0;
-}
+// bool isPointingBadly(const QuadState &state) {
+//    double z = state.rotateBodyToSpace(ez)(2);
+//    return z < 0;
+// }
 
-bool isSpinningTooFast(const QuadState &state) {
-  return state.omega.norm() > 10;
-}
+// bool isSpinningTooFast(const QuadState &state) {
+//   return state.omega.norm() > 10;
+// }
 
-void Controller::updateControlledOutputs( const QuadState & state )
-{
-  if (isSpinningTooFast(state)) {
-    updateToStopSpin(state);
-  }
-  else {
-    updateControlledOrientation(state);
-    if (!isPointingBadly(state)) {
-      updateControlledPosition(state);
-    } else {
-      cout << "Pointing Badly!" << endl;
-    }
-  }
-}
+// void Controller::updateControlledOutputs( const QuadState & state )
+// {
+//   if (isSpinningTooFast(state)) {
+//     updateToStopSpin(state);
+//   }
+//   else {
+//     updateControlledOrientation(state);
+//     if (!isPointingBadly(state)) {
+//       updateControlledPosition(state);
+//     } else {
+//       cout << "Pointing Badly!" << endl;
+//     }
+//   }
+// }
 
-// taken from http://stackoverflow.com/questions/1031005/is-there-an-algorithm-for-converting-quaternion-rotations-to-euler-angle-rotatio
-void GetEulerAngles(Quaterniond q, double& yaw, double& pitch, double& roll)
-{
-    const double w2 = q.w()*q.w();
-    const double x2 = q.x()*q.x();
-    const double y2 = q.y()*q.y();
-    const double z2 = q.z()*q.z();
-    const double unitLength = w2 + x2 + y2 + z2;    // Normalised == 1, otherwise correction divisor.
-    const double abcd = q.w()*q.x() + q.y()*q.z();
-    const double eps = 1e-7;    // TODO: pick from your math lib instead of hardcoding.
-    if (abcd > (0.5-eps)*unitLength)
-    {
-        yaw = 2 * atan2(q.y(), q.w());
-        pitch = M_PI;
-        roll = 0;
-    }
-    else if (abcd < (-0.5+eps)*unitLength)
-    {
-        yaw = -2 * ::atan2(q.y(), q.w());
-        pitch = -M_PI;
-        roll = 0;
-    }
-    else
-    {
-        const double adbc = q.w()*q.z() - q.x()*q.y();
-        const double acbd = q.w()*q.y() - q.x()*q.z();
-        yaw = ::atan2(2*adbc, 1 - 2*(z2+x2));
-        pitch = ::asin(2*abcd/unitLength);
-        roll = ::atan2(2*acbd, 1 - 2*(y2+x2));
-    }
-}
+// void Controller::updateControlledOrientation( const QuadState & state )
+// {
+//   bool correct = !isPointingBadly(state);
+//    // Try to point it upwards
+//    Quaterniond q0 = state.orient;
+//    double yaw, pitch, roll;
+//    GetEulerAngles(q0, yaw, pitch, roll);
+//    double zRotn = yaw;
+//    if (!correct)
+//      cout << "zRotn="<<zRotn<<endl;
+//    Quaterniond q1( AngleAxisd( zRotn, ez ) );
+//    double z = state.bodyToSpace(ez)(2);
+//    double angle = acos(z);
+//    if (!correct)
+//      cout << "q0: yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
+//    GetEulerAngles(q1, yaw, pitch, roll);
+//    if (!correct)
+//      cout << "q1: yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
+//    
+//    double weight = 1;
+//    
+//    for ( int j = 0; j < 4; ++j )
+//    {
+// 	  m_outputs[QuadState::StateIndexOrient + j].used = true;
+// 	  m_outputs[QuadState::StateIndexOrient + j].weight = weight;
+//    }
+//    
+//    for ( int i = 0; i < CONTROLLER_HP; ++i )
+//    {
+// 	  double speed = 2; // orientation speed
+// 	  double t = (i+1)*TsControllerTarget();
+// 	  double totalTime = abs(angle) / speed;
+// 	  double prop = t / totalTime;
+// 	  if ( prop > 1 )
+// 		 prop = 1;
+// 	  
+// 	  Quaterniond q = q0.slerp( prop, q1 );
+//       GetEulerAngles(q, yaw, pitch, roll);
+//       if (!correct)
+//         cout << " q("<<i<<"): yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
+// 	  
+// 	  for ( int j = 0; j < 4; ++j )
+// 		 m_outputs[QuadState::StateIndexOrient + j].value[i] = q.coeffs()(j);
+//    }
+// 
+// 
+//    // velocity decrease per time-step
+//    double dv = 10 * TsControllerTarget();
+//    for ( int i = 0; i < 3; ++i )
+//    {
+//       m_outputs[QuadState::StateIndexVel+i].used = true;
+//       m_outputs[QuadState::StateIndexomega+i].used = true;
+// //       m_outputs[QuadState::StateIndexPos+i].used = true;
+//       m_outputs[QuadState::StateIndexVel+i].weight = weight;
+//       m_outputs[QuadState::StateIndexomega+i].weight = weight;
+// //       m_outputs[QuadState::StateIndexPos+i].weight = weight;
+//       for (int j = 0; j < CONTROLLER_HP; ++j) {
+//         m_outputs[QuadState::StateIndexPos+i].value[j] = state.pos.coeff(i); // maintain current position
+//         double v = state.vel[i];
+//         double jdv = dv * (j+1);
+//         if (abs(jdv) > abs(v)) {
+//           v = 0;
+//         } else {
+//           v -= (v > 0) ? jdv : -jdv;
+//         }
+//         m_outputs[QuadState::StateIndexVel+i].value[j] = v;
+//       }
+//    }
+// }
 
-void Controller::updateControlledOrientation( const QuadState & state )
-{
-  bool correct = !isPointingBadly(state);
-   // Try to point it upwards
-   Quaterniond q0 = state.orient;
-   double yaw, pitch, roll;
-   GetEulerAngles(q0, yaw, pitch, roll);
-   double zRotn = yaw;
-   if (!correct)
-     cout << "zRotn="<<zRotn<<endl;
-   Quaterniond q1( AngleAxisd( zRotn, ez ) );
-   double z = state.bodyToSpace(ez)(2);
-   double angle = acos(z);
-   if (!correct)
-     cout << "q0: yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
-   GetEulerAngles(q1, yaw, pitch, roll);
-   if (!correct)
-     cout << "q1: yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
-   
-   double weight = 1;
-   
-   for ( int j = 0; j < 4; ++j )
-   {
-	  m_outputs[QuadState::StateIndexOrient + j].used = true;
-	  m_outputs[QuadState::StateIndexOrient + j].weight = weight;
-   }
-   
-   for ( int i = 0; i < CONTROLLER_HP; ++i )
-   {
-	  double speed = 2; // orientation speed
-	  double t = (i+1)*TsControllerTarget();
-	  double totalTime = abs(angle) / speed;
-	  double prop = t / totalTime;
-	  if ( prop > 1 )
-		 prop = 1;
-	  
-	  Quaterniond q = q0.slerp( prop, q1 );
-      GetEulerAngles(q, yaw, pitch, roll);
-      if (!correct)
-        cout << " q("<<i<<"): yaw="<<yaw<< " pitch="<<pitch<< " roll="<<roll << endl;
-	  
-	  for ( int j = 0; j < 4; ++j )
-		 m_outputs[QuadState::StateIndexOrient + j].value[i] = q.coeffs()(j);
-   }
+// void Controller::updateToStopSpin(const QuadState &state) {
+//    for ( int i = 0; i < 3; ++i ) {
+//       m_outputs[QuadState::StateIndexomega+i].used = true;
+//       m_outputs[QuadState::StateIndexomega+i].weight = 1;
+//       for (int j = 0; j < CONTROLLER_HP; ++j) {
+//         m_outputs[QuadState::StateIndexomega+i].value[j] = state.omega[i] + (state.omega[i] > 0 ? -(j+1) : (j+1));
+//       }
+//    }
+// }
 
-
-   // velocity decrease per time-step
-   double dv = 10 * TsControllerTarget();
-   for ( int i = 0; i < 3; ++i )
-   {
-      m_outputs[QuadState::StateIndexVel+i].used = true;
-      m_outputs[QuadState::StateIndexomega+i].used = true;
-//       m_outputs[QuadState::StateIndexPos+i].used = true;
-      m_outputs[QuadState::StateIndexVel+i].weight = weight;
-      m_outputs[QuadState::StateIndexomega+i].weight = weight;
-//       m_outputs[QuadState::StateIndexPos+i].weight = weight;
-      for (int j = 0; j < CONTROLLER_HP; ++j) {
-        m_outputs[QuadState::StateIndexPos+i].value[j] = state.pos.coeff(i); // maintain current position
-        double v = state.vel[i];
-        double jdv = dv * (j+1);
-        if (abs(jdv) > abs(v)) {
-          v = 0;
-        } else {
-          v -= (v > 0) ? jdv : -jdv;
-        }
-        m_outputs[QuadState::StateIndexVel+i].value[j] = v;
-      }
-   }
-}
-
-void Controller::updateToStopSpin(const QuadState &state) {
-   for ( int i = 0; i < 3; ++i ) {
-      m_outputs[QuadState::StateIndexomega+i].used = true;
-      m_outputs[QuadState::StateIndexomega+i].weight = 1;
-      for (int j = 0; j < CONTROLLER_HP; ++j) {
-        m_outputs[QuadState::StateIndexomega+i].value[j] = state.omega[i] + (state.omega[i] > 0 ? -(j+1) : (j+1));
-      }
-   }
-}
-
-void Controller::updateControlledPosition( const QuadState & state )
-{
-   // Position
-   m_outputs[QuadState::StateIndexPos+0].used = true;
-   m_outputs[QuadState::StateIndexPos+0].weight = 20;
-   m_outputs[QuadState::StateIndexPos+1].used = true;
-   m_outputs[QuadState::StateIndexPos+1].weight = 20;
-   m_outputs[QuadState::StateIndexPos+2].used = true;
-   m_outputs[QuadState::StateIndexPos+2].weight = 20;
-   
-   Vector3d targetPos;
-   targetPos << 0, 0, 12;
-   int maxSpeed = 20;
-   Vector3d offset = targetPos - state.pos;
-   double distanceToTarget = offset.norm();
-   double timeToTarget = distanceToTarget / maxSpeed;
-   
-   for ( int i = 0; i < CONTROLLER_HP; ++i )
-   {
-     double t = (i+1) * TsControllerTarget();
-     double prop = min(1.0, t / timeToTarget);
-     Vector3d instantTarget = state.pos + prop * offset;
-     for ( int coord = 0; coord < 3; ++coord )
-     {
-       m_outputs[QuadState::StateIndexPos+coord].value[i] = instantTarget.coeff(coord);
-     }
-   }
-}
+// void Controller::updateControlledPosition( const QuadState & state )
+// {
+//    // Position
+//    m_outputs[QuadState::StateIndexPos+0].used = true;
+//    m_outputs[QuadState::StateIndexPos+0].weight = 20;
+//    m_outputs[QuadState::StateIndexPos+1].used = true;
+//    m_outputs[QuadState::StateIndexPos+1].weight = 20;
+//    m_outputs[QuadState::StateIndexPos+2].used = true;
+//    m_outputs[QuadState::StateIndexPos+2].weight = 20;
+//    
+//    Vector3d targetPos;
+//    targetPos << 0, 0, 12;
+//    int maxSpeed = 20;
+//    Vector3d offset = targetPos - state.pos;
+//    double distanceToTarget = offset.norm();
+//    double timeToTarget = distanceToTarget / maxSpeed;
+//    
+//    for ( int i = 0; i < CONTROLLER_HP; ++i )
+//    {
+//      double t = (i+1) * TsControllerTarget();
+//      double prop = min(1.0, t / timeToTarget);
+//      Vector3d instantTarget = state.pos + prop * offset;
+//      for ( int coord = 0; coord < 3; ++coord )
+//      {
+//        m_outputs[QuadState::StateIndexPos+coord].value[i] = instantTarget.coeff(coord);
+//      }
+//    }
+// }
 
 void Controller::initMpc() {
    m_mpc.n = QUAD_STATE_SIZE;
@@ -333,24 +284,22 @@ void Controller::initMpc() {
    addPropConstraints();
 }
   
-
-void Controller::updateMpc()
+void Controller::updateMpc(QVector<ControlledOutput> const& outputs)
 {
    int QSS = QUAD_STATE_SIZE;
-   
-//    Vector4d um = World::self()->quad()->propInput();
+
    Vector4d um = m_prev_u;
    QuadState state = World::self()->observer()->state();
    LinearQuad lq = linearize( state, um );
    
-   for ( int i = 0; i < QSS; ++i )
-	  m_outputs[i].reset();
-   updateControlledOutputs( state );
+//    for ( int i = 0; i < QSS; ++i )
+// 	  m_outputs[i].reset();
+//    updateControlledOutputs( state );
    
    int numOutputs = 0;
    for ( int i = 0; i < QSS; ++i )
    {
-	  if ( m_outputs[i].used )
+	  if ( outputs[i].used )
 		 numOutputs++;
    }
    
@@ -374,9 +323,9 @@ void Controller::updateMpc()
    {
 	  for ( int j = 0; j < QSS; ++j )
 	  {
-		if ( !m_outputs[j].used )
+		if ( !outputs[j].used )
 			continue;
-		r[at] = m_outputs[j].value[i];
+		r[at] = outputs[j].value[i];
 		++at;
 	  }
    }
@@ -388,7 +337,7 @@ void Controller::updateMpc()
    at = 0;
    for ( int j = 0; j < QSS; ++j )
    {
-	  if ( !m_outputs[j].used )
+	  if ( !outputs[j].used )
 		 continue;
 	  m_mpc.permC[at] = j;
 	  C.insert(at, j) = 1;
@@ -407,9 +356,9 @@ void Controller::updateMpc()
    {
 	  for ( int j = 0; j < QSS; ++j )
 	  {
-		 if ( !m_outputs[j].used )
+		 if ( !outputs[j].used )
 			continue;
-		 m_mpc.Q(at,at) = m_outputs[j].weight;
+		 m_mpc.Q(at,at) = outputs[j].weight;
 		 ++at;
 	  }
    }

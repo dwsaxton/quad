@@ -1,20 +1,5 @@
 #include "quadstate.h"
 
-inline Quaterniond operator *(double s, const Quaterniond & q )
-{
-   return Quaterniond( s*q.w(), s*q.x(), s*q.y(), s*q.z() );
-}
-inline Quaterniond operator +( const Quaterniond & p, const Quaterniond & q )
-{
-   return Quaterniond( p.w()+q.w(), p.x()+q.x(), p.y()+q.y(), p.z()+q.z() );
-}
-
-inline Quaterniond toQuaterniond( const Vector3d & v )
-{
-   return Quaterniond( 0, v.x(), v.y(), v.z() );
-}
-
-
 //BEGIN class QuadState
 QuadState::QuadState()
 {
@@ -69,18 +54,21 @@ QuadState QuadState::operator+( const QuadState & other )
    return qs;
 }
 
-
-Vector3d QuadState::spaceToBody( const Vector3d & v ) const
-{
+Vector3d QuadState::rotateSpaceToBody( const Vector3d & v ) const {
    return orient * v;
 }
 
-
-Vector3d QuadState::bodyToSpace( const Vector3d & v ) const
-{
+Vector3d QuadState::rotateBodyToSpace( const Vector3d & v ) const {
    return orient.conjugate() * v;
 }
 
+Vector3d QuadState::translateSpaceToBody(Vector3d const& v) const {
+  return rotateSpaceToBody(v - pos);
+}
+
+Vector3d QuadState::translateBodyToSpace(Vector3d const& v) const {
+  return rotateBodyToSpace(v) + pos;
+}
 
 QuadStateVector QuadState::toVector() const
 {
@@ -105,8 +93,8 @@ void QuadState::fromVector( const QuadStateVector & v )
 void QuadState::calcDeriv( QuadState *deriv, const Vector3d & bodyAccel ) const
 {
    deriv->pos = vel;
-   deriv->vel = bodyToSpace( bodyAccel );
-   deriv->orient = toQuaterniond(-0.5 * omega) * orient;
+   deriv->vel = rotateBodyToSpace( bodyAccel );
+   deriv->orient = derivative(orient, omega);
    deriv->omega.setZero();
 }
 //END class QuadState
