@@ -1,5 +1,8 @@
 #include "highercontroller.h"
 
+#include <iostream>
+using namespace std;
+
 #include "controller.h"
 #include "quadraticintercept.h"
 #include "rotationplanner.h"
@@ -33,6 +36,7 @@ void HigherController::step() {
   // the required trajectory
   Vector3d current_z = state.orient.conjugate() * Vector3d(0, 0, 1);
   Vector3d target_z = intercept.b.normalized();
+//   cout << "current_z="<<current_z.transpose()<<" target_z="<<target_z.transpose()<<endl;
   Quaterniond offset_rotation;
   offset_rotation.setFromTwoVectors(current_z, target_z); // TODO is this the correct way around?
   double angle = acos(current_z.dot(target_z));
@@ -42,8 +46,9 @@ void HigherController::step() {
   RotationPlanner rotation_planner;
   rotation_planner.current_orientation_ = state.orient;
   rotation_planner.current_omega_ = state.omega;
-  rotation_planner.max_pitch_acceleration_ = 4; // TODO see below too
-  rotation_planner.target_orientation_ =  offset_rotation * state.orient; // TODO check this is the correct order for rotation
+  rotation_planner.max_pitch_acceleration_ = 1; // TODO see below too
+  rotation_planner.target_orientation_ =  state.orient * offset_rotation.conjugate(); // TODO check this is the correct order for rotation
+//   cout << "sanity target: " << (rotation_planner.target_orientation_.conjugate() * Vector3d(0, 0, 1)).transpose() << endl;
 
   Quaterniond next_orient;
   Vector3d next_omega;
@@ -59,7 +64,8 @@ void HigherController::step() {
     outputs[QuadState::StateIndexomega + j].value[0] = next_omega.coeff(j);
   }
 
-  if (angle < M_PI/4 /* TODO used elsewhere too, shouldn't be hard-coded */) {
+//   if (angle < M_PI/4 /* TODO used elsewhere too, shouldn't be hard-coded */) {
+//   if (false) {
     for (int j = 0; j < 3; ++j) {
       outputs[QuadState::StateIndexPos + j].used = true;
       outputs[QuadState::StateIndexPos + j].weight = 10;
@@ -68,15 +74,15 @@ void HigherController::step() {
       outputs[QuadState::StateIndexVel + j].weight = 10;
       outputs[QuadState::StateIndexVel + j].value[0] = target_vel.coeff(j);
     }
-  }
+//   }
   controller_->step(outputs);
 }
 
 Quadratic3d HigherController::interceptForTarget(QuadState const& state) const {
   QuadraticIntercept intercept;
   intercept.state_ = state;
-  intercept.max_linear_acceleration_ = 15; // TODO get the correct value!
-  intercept.max_pitch_acceleration_ = 4; // TODO get the correct value!
+  intercept.max_linear_acceleration_ = 20; // TODO get the correct value!
+  intercept.max_pitch_acceleration_ = 1; // TODO get the correct value!
   intercept.target_ = stateTargetToQuadratic();
   bool success;
   return intercept.interceptPath(&success);

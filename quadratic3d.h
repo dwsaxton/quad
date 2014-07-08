@@ -4,6 +4,8 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
+void test_Quadratic3d();
+
 /**
  * Quadratic of the form f(x) = a x^2 + b x + c, where a, b, c are 3d vectors
  */

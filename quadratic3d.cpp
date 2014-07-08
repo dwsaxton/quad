@@ -22,7 +22,10 @@ double quadraticSqrtIntegrate(double x, double u, double v, double w) {
 
   double discrim = 4*u*w-v*v;
   if (discrim > 0) {
-    return 0.5*sqrt(u*x*x + v*x + w)*x - 0.125*v*v*asinh((2*u*x + v)/sqrt(-v*v + 4*u*w))/pow(u,1.5) + 0.5*w*asinh((2*u*x + v)/sqrt(-v*v + 4*u*w))/sqrt(u) + 0.25*sqrt(u*x*x + v*x + w)*v/u;
+    auto lambda = [&] (double y) -> double {
+      return 0.5*sqrt(u*y*y + v*y + w)*y - 0.125*v*v*asinh((2*u*y + v)/sqrt(-v*v + 4*u*w))/pow(u,1.5) + 0.5*w*asinh((2*u*y + v)/sqrt(-v*v + 4*u*w))/sqrt(u) + 0.25*sqrt(u*y*y + v*y + w)*v/u;      
+    };
+    return lambda(x) - lambda(0);
   } else if (discrim == 0) {
     return 0.5*sqrt(u)*(x*x+v*x/u);
   } else /* discrim < 0 */ {
@@ -67,4 +70,17 @@ Vector3d Quadratic3d::eval(double x) const {
 
 Quadratic3d Quadratic3d::derivative() const {
   return Quadratic3d(Vector3d::Zero(), 2 * a, b);
+}
+
+void assert_approx_eq(double value, double target, double eps) {
+  assert(value >= target - eps);
+  assert(value <= target + eps);
+}
+
+void test_Quadratic3d() {
+  assert_approx_eq(quadraticSqrtIntegrate(10, 1, 0, 7), 58.8598, 0.01); 
+  assert_approx_eq(quadraticSqrtIntegrate(10, 1, 5, 7), 75.5983, 0.01);
+  assert_approx_eq(quadraticSqrtIntegrate(10, 2, 4, 2), 84.8528, 0.01);
+  assert_approx_eq(quadraticSqrtIntegrate(10, 2, 5, 2), 87.4948, 0.01);
+  assert_approx_eq(Quadratic3d(Vector3d(4, 0, -3), Vector3d(3, 15, -5), Vector3d(06, 17, 4)).length(10), 583.1264, 0.01);
 }

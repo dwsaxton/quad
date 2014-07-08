@@ -54,14 +54,7 @@ private:
   void initMpc();
   void updateMpc(QVector<ControlledOutput> const& next);
   void addPropConstraints();
-  
-//   void updateControlledOutputs( const QuadState & state );
-//   void updateControlledPosition( const QuadState & state );
-//   void updateControlledOrientation( const QuadState & state );
-//   void updateToStopSpin( const QuadState & state );
-//   QVector<ControlledOutput> m_outputs;
-  
-//   bool m_haveControl;
+
   VectorXd m_predX;
   
   // Previous disturbance

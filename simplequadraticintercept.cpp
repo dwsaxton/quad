@@ -1,6 +1,7 @@
 #include "simplequadraticintercept.h"
 
 #include <cmath>
+#include <iostream>
 using namespace std;
 
 
@@ -36,6 +37,7 @@ Quadratic3d SimpleQuadraticIntercept::interceptPath(bool * found) const {
 
     if (abs(valueMid) < eps) {
       *found = true;
+      cout << "intercept at T="<<mid<<endl;
       return calcInterceptPathForT(valueMid);
     }
 

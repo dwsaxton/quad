@@ -75,6 +75,11 @@ void Mpc::checkDimensions()
 
 VectorXd Mpc::calc_du( VectorXd *predX )
 {
+//   cout << "calc_du:" << endl;
+//   cout << "r: " << r.transpose() << endl;
+//   cout << "C: " << endl << C << endl;
+//   cout << "Q: " << endl << Q << endl;
+
    // If haven't defined a disturbance then create a zero one
    if ( d.rows() == 0 )
    {

@@ -26,4 +26,6 @@ Quadratic3d QuadraticIntercept::interceptPath(bool * found) const {
   intercept.c = state_.translateBodyToSpace(intercept.c);
   intercept.b = state_.rotateBodyToSpace(intercept.b) + state_.vel;
   intercept.a = state_.rotateBodyToSpace(intercept.a);
+
+  return intercept;
 }

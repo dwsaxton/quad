@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cmath>
 #include <Eigen/Core>
+#include <iostream>
+using namespace std;
 
 #include "quadstate.h"
 
@@ -48,13 +50,13 @@ void RotationPlanner::calcNextStep(double time_step, Quaterniond *orientation, V
   // than one half circle, then use the logic that we just try to stop ourselves spinning by
   // applying force in the opposite direction of rotation
   Vector3d yaw_free_current_omega = current_omega_;
-  yaw_free_current_omega.z() = 0;
+//   yaw_free_current_omega.z() = 0;
   double angular_speed = yaw_free_current_omega.norm();
   double distance_to_stop = angular_speed * angular_speed / 2 / max_pitch_acceleration_;
-  double reduced_angular_speed = angular_speed - time_step * max_pitch_acceleration_;
+  double reduced_angular_speed = std::max(0.0, angular_speed - time_step * max_pitch_acceleration_);
   if (distance_to_stop > M_PI) {
-    *omega = yaw_free_current_omega * angular_speed / reduced_angular_speed;
-    omega->z() = current_omega_.z();
+    *omega = yaw_free_current_omega * reduced_angular_speed / angular_speed;
+//     omega->z() = current_omega_.z();
     *orientation = current_orientation_ + time_step * derivative(current_orientation_, *omega);
     orientation->normalize();
     return;
@@ -65,12 +67,13 @@ void RotationPlanner::calcNextStep(double time_step, Quaterniond *orientation, V
   // TODO this is not the best way of doing it! we're going to get oscillation, or at least we're
   // not going to converge in the optimal way possible
 
-  double time_to_rotate = 4 * sqrt(distance_to_stop / max_pitch_acceleration_); // constant factor at start is to allow some lee-way
+  double time_to_rotate = 10 * sqrt(distance_to_stop / max_pitch_acceleration_); // constant factor at start is to allow some lee-way
   *orientation = current_orientation_ + time_step * derivative(current_orientation_, current_omega_);
   double prop = std::min(1.0, time_step / time_to_rotate);
+//   cout << "prop = " << prop << endl;
   *orientation = orientation->slerp(prop, target_orientation_);
 
-  // TODO this is definitely not a good omega!
-  *omega = yaw_free_current_omega * angular_speed / reduced_angular_speed;
-  omega->z() = current_omega_.z();
+  Quaterniond deriv = (1.0 / time_step) * (*orientation + (-1) * current_orientation_);
+  *omega = (-2 * deriv * current_orientation_.conjugate()).vec();
+//   cout << "omega: " << omega->transpose() << endl;
 }
