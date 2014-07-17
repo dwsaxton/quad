@@ -1,6 +1,7 @@
 #include "glquad.h"
 
 #include "observer.h"
+#include "path.h"
 #include "quad.h"
 #include "world.h"
 
@@ -118,12 +119,42 @@ void GLQuad::drawAxes()
    renderText( 0, 0, l, "z" );
 }
 
+void GLQuad::drawIntercept() {
+  Path *intercept = World::self()->simulatedQuad()->path_;
+  if (intercept == nullptr) {
+    return;
+  }
+  glBegin(GL_LINES);
+  int count = 50;
+  double duration = intercept->duration();
+  Vector3d prev;
+  for (int i = 0; i < count; ++i) {
+    double t = i * duration / count;
+    Vector3d next = intercept->position(t);
+    if (i > 0) {
+      glVertex3f(prev.x(), prev.y(), prev.z());
+      glVertex3f(next.x(), next.y(), next.z());
+    }
+    prev = next;
+    if (i == 0) {
+      // Draw the acceleration arrow
+      Vector3d tip = prev + 4 * intercept->initialAccelerationDirection();
+      glColor3f(1,0,0);
+      glVertex3f(prev.x(), prev.y(), prev.z());
+      glVertex3f(tip.x(), tip.y(), tip.z());
+      glColor3f(0,0,0);
+    }
+  }
+  glEnd();
+}
+
 void GLQuad::paintGL()
 {
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    
    setupView();
    drawAxes();
+   drawIntercept();
    
    if ( World::self()->environment() == World::Simulation )
    {

@@ -15,16 +15,16 @@ public:
   // about this) in radians per second per second.
   double max_pitch_acceleration_;
 
-  // current orientation
-  Quaterniond current_orientation_;
+  // current heading
+  Vector3d current_heading_;
 
-  // target orientation
-  Quaterniond target_orientation_;
+  // target heading
+  Vector3d target_heading_;
   
   // current instantaneous angular velocity
   Vector3d current_omega_;
   
-  void calcNextStep(double time_step, Quaterniond *orientation, Vector3d *omega) const;
+  void calcNextStep(double time_step, Vector3d* heading, Vector3d* omega) const;
 };
 
 #endif // ROTATIONPLANNER_H

@@ -164,7 +164,7 @@ void World::updateTimers()
    if ( isRunning() )
    {
       if ( m_environment == Simulation )
-         m_stepTimer->start( TsWorldMs );
+         m_stepTimer->start( TsWorldMs * 10 );
       else
          m_stepIfReadingsTimer->start(1);
    }

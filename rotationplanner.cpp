@@ -45,6 +45,37 @@ RotationPlanner::RotationPlanner() {
   max_pitch_acceleration_ = -1;
 }
 
+double next(double distance, double vel, double max_accel) {
+}
+
+void RotationPlanner::calcNextStep(double time_step, Vector3d *heading, Vector3d *omega) const {
+  Vector3d a = current_heading_;
+  Vector3d b = target_heading_;
+  Vector3d v = current_omega_.cross(a); // current velocity
+
+  // calculate vector for great circle direction
+  Vector3d d = b - a;
+  d -= a.dot(d) * a;
+  if (d.norm() < 0.02) {
+    // TODO is this a good value? this strategy is a bit arbitrary.
+    d = v; // use velocity to define the great circle. (any great circle will roughly go through the point)
+  }
+  d.normalize();
+
+  // And transverse direction
+  Vector3d e = a.cross(d);
+
+  // Split v into components that are parallel and transverse to the great circle
+  double vx = d.dot(v);
+  double vy = e.dot(v);
+
+  // angular distance to travel
+  double distance = acos(a.dot(b));
+  
+  // TODO finish using LinearPlanner
+}
+
+#if 0
 void RotationPlanner::calcNextStep(double time_step, Quaterniond *orientation, Vector3d *omega) const {
   // If the current angular velocity is so great that we couldn't decelerate to a stop in less
   // than one half circle, then use the logic that we just try to stop ourselves spinning by
@@ -55,6 +86,7 @@ void RotationPlanner::calcNextStep(double time_step, Quaterniond *orientation, V
   double distance_to_stop = angular_speed * angular_speed / 2 / max_pitch_acceleration_;
   double reduced_angular_speed = std::max(0.0, angular_speed - time_step * max_pitch_acceleration_);
   if (distance_to_stop > M_PI) {
+    cout << "RotationPlanner::calcNextStep: applying breaks!" << endl;
     *omega = yaw_free_current_omega * reduced_angular_speed / angular_speed;
 //     omega->z() = current_omega_.z();
     *orientation = current_orientation_ + time_step * derivative(current_orientation_, *omega);
@@ -77,3 +109,4 @@ void RotationPlanner::calcNextStep(double time_step, Quaterniond *orientation, V
   *omega = (-2 * deriv * current_orientation_.conjugate()).vec();
 //   cout << "omega: " << omega->transpose() << endl;
 }
+#endif

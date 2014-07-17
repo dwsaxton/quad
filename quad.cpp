@@ -120,6 +120,7 @@ void Quad::reset()
    m_state.reset();
    m_propInput.setZero();
    m_wind.setZero();
+   path_ = nullptr;
 }
 
 

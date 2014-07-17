@@ -4,13 +4,62 @@
 #include <iostream>
 using namespace std;
 
+double PathInfo::accelDurationAtTime(double t) const {
+  return max(0.0, min(t - rotation_duration, accel_duration));
+}
+
+double PathInfo::lengthTraveled(double t, double accel) const {
+  double accel_t = accelDurationAtTime(t);
+  double length = 0.5 * accel * accel_t * accel_t;
+  double cutoff = rotation_duration + accel_duration;
+  if (t > cutoff) {
+    length += (t - cutoff) * accel * accel_duration;
+  }
+  return length;
+}
 
 SimpleQuadraticIntercept::SimpleQuadraticIntercept() {
   max_linear_acceleration_ = 12; // slightly faster than gravity for default value
   max_pitch_acceleration_ = 2; // sensible default value too
 }
 
-Quadratic3d SimpleQuadraticIntercept::interceptPath(bool * found) const {
+double paramForZero(std::function<double (double)> fn, double left, double right, bool* found) {
+  // TODO make these parameters of this function?
+  // TODO use a faster convergence algorithm such as Newton's method?
+  int maxIt = 40;
+  double eps = 1e-5;
+
+  double valueLeft = fn(left);
+  double valueRight = fn(right);
+
+  if ((valueLeft > 0 && valueRight > 0) || (valueLeft < 0 && valueRight < 0)) {
+    *found = false;
+    return 0;
+  }
+
+  for (int i = 0; i < maxIt; ++i) {
+    double mid = (left + right) / 2;
+    double valueMid = fn(mid);
+
+    if (abs(valueMid) < eps) {
+      *found = true;
+      return mid;
+    }
+
+    if ((valueLeft > 0) == (valueMid > 0)) {
+      left = mid;
+      valueLeft = valueMid;
+    } else {
+      right = mid;
+      valueRight = valueMid;
+    }
+  }
+
+  *found = false;
+  return (left + right) / 2;
+}
+
+Path* SimpleQuadraticIntercept::interceptPath(bool *found) const {
   // Do search for correct T
   double left = 0; // always search for positive time. (can't fly backwards in time!)
 
@@ -25,55 +74,89 @@ Quadratic3d SimpleQuadraticIntercept::interceptPath(bool * found) const {
     right *= 2;
   }
   if (right >= maxT) {
-    *found = false;
-    return calcInterceptPathForT(0);
+    return new PathFromQuadratic(calcInterceptPathForT(0), max_linear_acceleration_);
   }
 
-  double valueRight = f(right);
+  auto function = [&] (double x) { return f(x); };
 
-  for (int i = 0; i < maxIt; ++i) {
-    double mid = (left + right) / 2;
-    double valueMid = f(mid);
-
-    if (abs(valueMid) < eps) {
-      *found = true;
-      cout << "intercept at T="<<mid<<endl;
-      return calcInterceptPathForT(valueMid);
-    }
-
-    if ((valueLeft > 0) == (valueMid > 0)) {
-      left = mid;
-      valueLeft = valueMid;
-    } else {
-      right = mid;
-      valueRight = valueMid;
-    }
-  }
-
-  *found = false;
-  return calcInterceptPathForT(0);
+  // TODO passing of eps, iteration parameters
+  double T = paramForZero(function, left, right, found);
+  cout << "SimpleQuadraticIntercept::interceptPath: T: " << T << endl;
+  PathInfo info = calcInterceptPathForT(T);
+  return new PathFromQuadratic(info, max_linear_acceleration_);
 }
 
-Quadratic3d SimpleQuadraticIntercept::calcInterceptPathForT(double T) const {
+PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T) const {
   Vector3d pos = target_.eval(T);
   Vector3d deriv = target_.derivative().eval(T);
-  Quadratic3d traj;
-  traj.a = deriv - pos;
-  traj.b = 2*pos - deriv;
-  return traj;
-}
+  PathInfo info;
+  info.duration = T;
+  info.quadratic.a = deriv - pos;
+  info.quadratic.b = 2*pos - deriv;
 
-double SimpleQuadraticIntercept::f(double T) const {
-  // target_ interception speed
-  double v = target_.derivative().eval(T).norm();
-  Quadratic3d intercept = calcInterceptPathForT(T);
-
-  // calculate the time it takes to orientate ourselves in the direction of the path
-  Vector3d initial_direction = intercept.b.normalized();
+  Vector3d initial_direction = info.quadratic.b.normalized();
   double angle = acos(initial_direction.z());
   double angle_threshold = M_PI / 4; // TODO should this be standardized somewhere?
   double rotation_required = max(0.0, angle - angle_threshold);
-  double rotation_time = 2 * sqrt(rotation_required / max_pitch_acceleration_);
+  info.rotation_duration = rotation_required / max_pitch_acceleration_; // TODO this is not a good estimate for the length of time required for rotation
+//   cout << "SimpleQuadraticIntercept::calcInterceptPathForT: rotation_duration: " << info.rotation_duration << endl;
+  info.length = info.quadratic.length(1);
+  info.accel_duration = targetSpeed(T) / max_linear_acceleration_;
+  return info;
+}
 
-  return 0.5*v*v/max_linear_acceleration_ + v*(T - v/max_linear_acceleration_ - rotation_time) - intercept.length(1);
+double SimpleQuadraticIntercept::targetSpeed(double T) const {
+  return target_.derivative().eval(T).norm();
+}
+
+double SimpleQuadraticIntercept::f(double T, PathInfo *info) const {
+  // target_ interception speed
+  double v = targetSpeed(T);
+  PathInfo temp;
+  if (info == nullptr) {
+    info = &temp;
+  }
+  *info = calcInterceptPathForT(T);
+
+  return info->lengthTraveled(T, max_linear_acceleration_) - info->length;
+}
+
+
+PathFromQuadratic::PathFromQuadratic(const PathInfo& info, double accel) {
+  info_ = info;
+  accel_ = accel;
+}
+
+double PathFromQuadratic::parameterForTime(double t) const {
+  if (t == 0) {
+    return 0;
+  }
+
+  if (paramater_for_time_cache_.contains(t)) {
+    return paramater_for_time_cache_.value(t);
+  }
+    
+  double length_target = info_.lengthTraveled(t, accel_);
+  auto length_error = [&] (double param) { return info_.quadratic.length(param) - length_target; };
+  bool found;
+  double param = paramForZero(length_error, 0, 1.1, &found);
+  if (!found) {
+    cout << "PathFromQuadratic::parameterForTime("<<t<<"): correct parameter not found" << endl;
+  }
+  paramater_for_time_cache_.insert(t, param);
+  return param;
+}
+
+Vector3d PathFromQuadratic::position(double t) const {
+  double param = parameterForTime(t);
+  return info_.quadratic.eval(param);
+}
+
+Vector3d PathFromQuadratic::velocity(double t) const {
+  double accel_duration = info_.accelDurationAtTime(t);
+  double target_v = accel_ * accel_duration;
+  double param = parameterForTime(t);
+  Vector3d vel = info_.quadratic.derivative().eval(param);
+  vel *= target_v / vel.norm();
+  return vel;
 }

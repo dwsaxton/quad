@@ -117,28 +117,32 @@ Controller::Controller()
 void Controller::step(const QVector< ControlledOutput >& next)
 {
   assert(next.size() == QUAD_STATE_SIZE);
-   m_prev_u = World::self()->simulatedQuad()->propInput();
-   updateMpc(next);
-   VectorXd du = m_mpc.calc_du( &m_predX );
-   VectorXd newu = m_prev_u + du;
+  m_prev_u = World::self()->simulatedQuad()->propInput();
+  updateMpc(next);
+  VectorXd du = m_mpc.calc_du( &m_predX );
+  VectorXd newu = m_prev_u + du;
 
-   for ( int i = 0; i < 4; ++i )
-   {
-     if (!isfinite(newu[i])) {
-       cout << "Warning: not finite!" << endl;
-       newu[i] = 0;
-     } else if (newu[i] < 0) {
-       cout << "newu["<<i<<"] = " << newu[i] << " < 0" << endl;
-       newu[i] = 0;
-     } else if (newu[i] > 1) {
-       cout << "newu["<<i<<"] = " << newu[i] << " > 1" << endl;
-       newu[i] = 1;
-     }
-   }
-   World::self()->setQuadInput( newu );
+  for ( int i = 0; i < 4; ++i )
+  {
+    if (!isfinite(newu[i])) {
+      cout << "Warning: not finite!" << endl;
+      newu[i] = 0;
+    } else if (newu[i] < 0) {
+      if (newu[i] < -1e-8) {
+        cout << "newu["<<i<<"] = " << newu[i] << " < 0" << endl;
+      }
+      newu[i] = 0;
+    } else if (newu[i] > 1) {
+      if (newu[i] > 1 + 1e-8) {
+        cout << "newu["<<i<<"] = " << newu[i] << " > 1" << endl;
+      }
+      newu[i] = 1;
+    }
+  }
+  World::self()->setQuadInput( newu );
 
-   m_pred_d = m_mpc.d;
-   m_prev_u = newu;
+  m_pred_d = m_mpc.d;
+  m_prev_u = newu;
 }
 
 void Controller::initMpc() {
