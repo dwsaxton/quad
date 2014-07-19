@@ -17,16 +17,6 @@ public:
   double time_step;
 
   void calcNext(double *x, double *v) const;
-
-private:
-  enum Hint {
-    LeftThenRight,
-    RightThenLeft,
-    JustRight,
-    LeftLeft,
-    NoAccel,
-  };
-  void calcNext(Hint hint, double *x, double *v) const;
 };
 
 #endif // LINEARQUADRATICPLANNER_H

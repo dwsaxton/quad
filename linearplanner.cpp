@@ -1,5 +1,8 @@
-#include "linearquadraticplanner.h"
 #include "linearplanner.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
 
 LinearPlanner::LinearPlanner() {
   x0 = 0;
@@ -10,74 +13,40 @@ LinearPlanner::LinearPlanner() {
   max_accel = 0;
 }
 
-bool shouldAccelRight(double a, double y, double w) {
-  return w > 0 || w*w < a*y;
-}
-
-double accelRightTime(double a, double y, double w) {
-  assert(shouldAccelRight(a, y, w));
-  return (2*w - sqrt(6*max_accel*y - 2*w*w)) / (3 * max_accel);
+double abs(double x) {
+  return x > 0 ? x : -x;
 }
 
 void LinearPlanner::calcNext(double* x, double* v) const {
-  calcNext(shouldAccelRight(max_accel, y, w) ? RightThenLeft : LeftThenRight, x, v);
-}
+  // Aim to match speed and velocity, by accelerating in one direction, then the other.
+  // Acclerate in one direction for time t0, then accelerate in other for time t1.
+  // So solve for:
+  // v0 + a*t0 - a*t1 = v1
+  // x0 + v0*(t0+t1) + a*t0^2/2 + a*t0*t1 - a*t1^2/2 = x1 + v1*(t0+t1)
 
-void LinearPlanner::calcNext(LinearPlanner::Hint hint, double* x, double* v) const {
-  double y = x1 - x0;
-  double w = v1 - v0;
-  bool flip = y < 0;
-  if (flip) {
-    y *= -1;
-    w *= -1;
+  double dv = v1 - v0;
+  double dx = x1 - x0;
+  int sign;
+  if (dx == 0) {
+    sign = dv > 0 ? +1 : -1;
+  } else if (dv == 0 || dv * dx > 0 || dv*dv/2 <= max_accel * abs(dx)) {
+    sign = dx > 0 ? +1 : -1;
+  } else {
+    sign = dx > 0 ? -1 : +1;
   }
+  
+  double a = sign * max_accel;
+  
+  double t0 = (dv + sign * sqrt(0.5*dv*dv + a*dx))/a;
+  assert(std::isfinite(t0));
+  assert(t0 >= -1e-5);
+  double t1 = -dv/a + t0;
+  assert(t1 >= -1e-5);
 
-  switch (hint) {
-    case NoAccel:
-      break; // constant speed
-    case JustRight:
-    case RightThenLeft: {
-      double accel_right_time = accelRightTime(max_accel, y, w);
-      if (accel_right_time >= time_step) {
-        // Great, don't have to do any further calculations!
-        *x = 0.5 * max_accel * time_step * time_step;
-        *v = max_accel * time_step;
-        break;
-      }
-      
-      // Accelerate right for a little bit, then left
-      LinearPlanner planner(*this);
-      planner.x0 += 0.5 * max_accel * accel_right_time * accel_right_time;
-      planner.v0 += max_accel * accel_right_time;
-      planner.time_step -= accel_right_time;
-      planner.calcNext(hint == RightThenLeft ? JustLeft : NoAccel, x, v);
-      break;
-    }
-    case JustLeft:
-    case LeftThenRight: {
-      double accel_left_time = accelLeftTime(max_accel, y, w);
-      if (accel_left_time >= time_step) {
-        // Great, don't have to do any further calculations!
-        *x = - 0.5 * max_accel * time_step * time_step;
-        *v = - max_accel * time_step;
-        break;
-      }
-      
-      // Accelerate right for a little bit, then left
-      LinearPlanner planner(*this);
-      planner.x0 -= 0.5 * max_accel * accel_left_time * accel_left_time;
-      planner.v0 -= max_accel * accel_left_time;
-      planner.time_step -= accel_left_time;
-      planner.calcNext(hint == LeftThenRight ? JustRight : NoAccel, x, v);
-      break;
-    }
-  }
+  double s0 = std::min(t0, time_step);
+  double s1 = std::min(t1, time_step-s0);
+  double s2 = time_step-s0-s1;
 
-  // "un-normalize" the final result
-  if (flip) {
-    *x *= -1;
-    *w *= -1;
-  }
-  *x += x0 + v0 * time_step;
-  *w += v0;
+  *v = v0 + a*s0 - a*s1;
+  *x = x0 + v0*(s0+s1) + 0.5*a*s0*s0 + a*s0*s1 - 0.5*a*s1*s1 + (*v) * s2;
 }

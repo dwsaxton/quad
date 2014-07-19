@@ -9,8 +9,8 @@ using namespace std;
 #include "world.h"
 
 // TODO these constants may be hard coded elsewhere (so check!), and besides, we should calculate them
-const double MaxLinearAcceleration = 20;
-const double MaxPitchAcceleration = 5;
+const double MaxLinearAcceleration = 15;
+const double MaxPitchAcceleration = 50;
 
 HigherController::HigherController() {
   have_control_ = false;
@@ -49,27 +49,30 @@ void HigherController::step() {
   Vector3d target_z = intercept->initialAccelerationDirection();
 //   cout << "current_z: " <<current_z.transpose()<<endl;
 //   cout << "target_z:  " <<target_z.transpose()<<endl;
-  cout << "current pos: " << state.pos.transpose() << endl;
-  cout << "target pos:  " << target_pos.transpose() << endl;
-  cout << "current vel: " << state.vel.transpose() << endl;
-  cout << "target vel:  " << target_vel.transpose() << endl;
+//   cout << "current pos: " << state.pos.transpose() << endl;
+//   cout << "target pos:  " << target_pos.transpose() << endl;
+//   cout << "current vel: " << state.vel.transpose() << endl;
+//   cout << "target vel:  " << target_vel.transpose() << endl;
 
   QVector<ControlledOutput> outputs(QUAD_STATE_SIZE);
 
   RotationPlanner rotation_planner;
   rotation_planner.current_heading_ = current_z;
-  rotation_planner.current_omega_ = state.omega;
+  rotation_planner.current_omega_ = state.rotateBodyToSpace(state.omega);
   rotation_planner.max_pitch_acceleration_ = MaxPitchAcceleration;
   rotation_planner.target_heading_ = target_z;
 
-  Quaterniond next_orient;
+  Vector3d next_heading;
   Vector3d next_omega;
-  rotation_planner.calcNextStep(time_step, &next_orient, &next_omega);
-  for (int j = 0; j < 4; ++j) {
-    outputs[QuadState::StateIndexOrient + j].used = false;
-    outputs[QuadState::StateIndexOrient + j].weight = 10;
-    outputs[QuadState::StateIndexOrient + j].value[0] = next_orient.coeffs()[j];
-  }
+  rotation_planner.calcNextStep(time_step, &next_heading, &next_omega);
+  next_omega = state.rotateSpaceToBody(next_omega);
+  
+//   Quaterniond next_orient; // TODO implement this
+//   for (int j = 0; j < 4; ++j) {
+//     outputs[QuadState::StateIndexOrient + j].used = false;
+//     outputs[QuadState::StateIndexOrient + j].weight = 10;
+//     outputs[QuadState::StateIndexOrient + j].value[0] = next_orient.coeffs()[j];
+//   }
   for (int j = 0; j < 3; ++j) {
     outputs[QuadState::StateIndexomega + j].used = true;
     outputs[QuadState::StateIndexomega + j].weight = 20;

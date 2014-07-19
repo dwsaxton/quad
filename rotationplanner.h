@@ -21,7 +21,7 @@ public:
   // target heading
   Vector3d target_heading_;
   
-  // current instantaneous angular velocity
+  // current instantaneous angular velocity in the space frame
   Vector3d current_omega_;
   
   void calcNextStep(double time_step, Vector3d* heading, Vector3d* omega) const;
