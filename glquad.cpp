@@ -144,6 +144,8 @@ void GLQuad::drawIntercept() {
       glVertex3f(tip.x(), tip.y(), tip.z());
       glColor3f(0,0,0);
     }
+//     if (i == count-1) {
+//       // Draw the final 
   }
   glEnd();
 }

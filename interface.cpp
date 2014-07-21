@@ -121,10 +121,11 @@ VectorXd qCoeffs_wxyz( const Quaterniond & q )
 void Interface::updateLabels()
 {
    bool simulation = World::self()->environment() == World::Simulation;
+   Quad *quad = World::self()->simulatedQuad();
    
    if ( simulation )
    {
-      QuadState state = World::self()->simulatedQuad()->state();
+      QuadState state = quad->state();
    
       positionLabel->setText( toCoords( state.pos ) );
       velocityLabel->setText( toCoords( state.vel ) );
@@ -162,6 +163,9 @@ void Interface::updateLabels()
    gyroLabel->setText( toCoords( s->readGyroscope(), 3 ) + "\n+-" + toCoords(s->var_bg().array().sqrt(),4) );
    gpsLabel->setText( toCoords( s->readGPS() ) + "\n+-" + toCoords(s->var_bgps().array().sqrt(),1) );
    
+   // Update plot 
+   double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
+//    interceptPlot->setIntercept(quad->intercept, duration);
    
    
    if ( World::self()->isRunning() )

@@ -9,6 +9,7 @@ class Controller;
 class Path;
 class Quadratic3d;
 class QuadState;
+class SimpleQuadraticIntercept;
 
 class HigherController : public QObject {
    Q_OBJECT
@@ -24,11 +25,12 @@ public Q_SLOTS:
 
 private:
   Quadratic3d stateTargetToQuadratic() const;
-  Path* interceptForTarget(const QuadState& state) const;
+  Path* interceptForTarget(const QuadState& state, SimpleQuadraticIntercept * simpleIntercept) const;
 
   Vector3d target_pos_;
   bool have_control_;
   Controller *controller_;
+  double prev_intercept_duration_;
 };
 
 #endif // HIGHERCONTROLLER_H

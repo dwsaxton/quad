@@ -3,6 +3,8 @@
 
 #include "quadstate.h"
 
+#include "simplequadraticintercept.h"
+
 const Vector3d ez( 0, 0, 1 ); // Vector pointing downwards
 
 class Path;
@@ -80,6 +82,7 @@ public:
   QuadInfo info() const { return calcInfo( m_state, m_propInput, m_wind ); }
 
   Path *path_;
+//   SimpleQuadraticIntercept intercept;
 
 private:
   Vector3d m_wind;

@@ -14,6 +14,8 @@ inline double TsWorldTarget() { return TsWorldMs*1e-3; }
 const int TsControllerMs = 4*TsWorldMs;
 inline double TsControllerTarget() { return TsControllerMs*1e-3; }
 
+const double GRAVITY = 9.81;
+
 const int CONTROLLER_HP = 1;
 const int CONTROLLER_HU = 1;
 

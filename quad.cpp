@@ -10,7 +10,7 @@ QuadModel::QuadModel()
 {
    // Default values
    M = 2;
-   g = 9.81;
+   g = GRAVITY;
    I1 = 0.01;
    I2 = 0.01;
    I3 = 0.01;

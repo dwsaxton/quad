@@ -7,23 +7,23 @@
 
 class Interface : public QWidget, public Ui::Interface
 {
-   Q_OBJECT
-   
-   public:
-      Interface();
-      ~Interface();
-      
-   private Q_SLOTS:
-      void propInputsChanged();
-      void updateLabels();
-      void resetQuad();
-      void runPauseQuad();
-	  void setEnvironmentSimulation();
-	  void setEnvironmentActual();
-      
-   private:
-      double propInput( int i ) const;
-      QSlider *m_propInputs[4];
+Q_OBJECT
+
+public:
+  Interface();
+  ~Interface();
+  
+private Q_SLOTS:
+  void propInputsChanged();
+  void updateLabels();
+  void resetQuad();
+  void runPauseQuad();
+  void setEnvironmentSimulation();
+  void setEnvironmentActual();
+  
+private:
+  double propInput( int i ) const;
+  QSlider *m_propInputs[4];
 };
 
 #endif

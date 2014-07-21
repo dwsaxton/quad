@@ -18,48 +18,7 @@ double PathInfo::lengthTraveled(double t, double accel) const {
   return length;
 }
 
-SimpleQuadraticIntercept::SimpleQuadraticIntercept() {
-  max_linear_acceleration_ = 12; // slightly faster than gravity for default value
-  max_pitch_acceleration_ = 2; // sensible default value too
-}
-
-double paramForZero(std::function<double (double)> fn, double left, double right, bool* found) {
-  // TODO make these parameters of this function?
-  // TODO use a faster convergence algorithm such as Newton's method?
-  int maxIt = 40;
-  double eps = 1e-5;
-
-  double valueLeft = fn(left);
-  double valueRight = fn(right);
-
-  if ((valueLeft > 0 && valueRight > 0) || (valueLeft < 0 && valueRight < 0)) {
-    *found = false;
-    return 0;
-  }
-
-  for (int i = 0; i < maxIt; ++i) {
-    double mid = (left + right) / 2;
-    double valueMid = fn(mid);
-
-    if (abs(valueMid) < eps) {
-      *found = true;
-      return mid;
-    }
-
-    if ((valueLeft > 0) == (valueMid > 0)) {
-      left = mid;
-      valueLeft = valueMid;
-    } else {
-      right = mid;
-      valueRight = valueMid;
-    }
-  }
-
-  *found = false;
-  return (left + right) / 2;
-}
-
-Path* SimpleQuadraticIntercept::interceptPath(bool *found) const {
+Path* SimpleQuadraticIntercept::interceptPath(double T_hint, bool *found) const {
   // Do search for correct T
   double left = 0; // always search for positive time. (can't fly backwards in time!)
 
@@ -80,15 +39,15 @@ Path* SimpleQuadraticIntercept::interceptPath(bool *found) const {
   auto function = [&] (double x) { return f(x); };
 
   // TODO passing of eps, iteration parameters
-  double T = paramForZero(function, left, right, found);
-  cout << "SimpleQuadraticIntercept::interceptPath: T: " << T << endl;
-  PathInfo info = calcInterceptPathForT(T);
+  double T = newtonSearch(function, T_hint, found);
+//   cout << "SimpleQuadraticIntercept::interceptPath: T: " << T << endl;
+  PathInfo info = calcInterceptPathForT(T, true);
   return new PathFromQuadratic(info, max_linear_acceleration_);
 }
 
-PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T) const {
+PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T, bool debug) const {
   Vector3d pos = target_.eval(T);
-  Vector3d deriv = target_.derivative().eval(T);
+  Vector3d deriv = 5 * target_.derivative().eval(T);
   PathInfo info;
   info.duration = T;
   info.quadratic.a = deriv - pos;
@@ -97,11 +56,23 @@ PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T) const {
   Vector3d initial_direction = info.quadratic.b.normalized();
   double angle = acos(initial_direction.z());
   double angle_threshold = M_PI / 4; // TODO should this be standardized somewhere?
+//   double angle_threshold = 0;
   double rotation_required = max(0.0, angle - angle_threshold);
   info.rotation_duration = rotation_required / max_pitch_acceleration_; // TODO this is not a good estimate for the length of time required for rotation
-//   cout << "SimpleQuadraticIntercept::calcInterceptPathForT: rotation_duration: " << info.rotation_duration << endl;
   info.length = info.quadratic.length(1);
   info.accel_duration = targetSpeed(T) / max_linear_acceleration_;
+
+  if (debug) {
+    cout << endl << "T: " << T << endl;
+    cout << "pos(T): " << pos.transpose() << endl;
+    cout << "deriv(T): " << deriv.transpose() << endl;
+    cout << "angle: " << angle << endl;
+    cout << "rotation_duration: " << info.rotation_duration << endl;
+    cout << "length: " << info.length << endl;
+    cout << "targetSpeed(T): " << targetSpeed(T) << endl;
+    cout << "accel_duration: " << info.accel_duration << endl;
+  }
+
   return info;
 }
 
@@ -139,7 +110,7 @@ double PathFromQuadratic::parameterForTime(double t) const {
   double length_target = info_.lengthTraveled(t, accel_);
   auto length_error = [&] (double param) { return info_.quadratic.length(param) - length_target; };
   bool found;
-  double param = paramForZero(length_error, 0, 1.1, &found);
+  double param = binarySearch(length_error, 0, 1.1, &found);
   if (!found) {
     cout << "PathFromQuadratic::parameterForTime("<<t<<"): correct parameter not found" << endl;
   }

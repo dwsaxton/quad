@@ -302,7 +302,7 @@ ObserverState Observer::f( const ObserverState & x0 )
    Vector3d g = m_g - x0.bg;
    
    // Remove gravity
-   a -= 9.81 * state.rotateSpaceToBody( ez );
+   a -= GRAVITY * state.rotateSpaceToBody( ez );
    
 //    a.setZero();
    

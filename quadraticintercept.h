@@ -29,7 +29,7 @@ public:
   // The pointer found is set to true or false depending on whether a valid path was found. If no
   // trajectory was found, then will return the trajectory to the current target_ position
   // (at t=0).
-  Path *interceptPath(bool * found) const;
+  Path *interceptPath(double T_hint, bool* found, SimpleQuadraticIntercept* simpleIntercept) const;
 };
 
 class CompletePath : public Path {

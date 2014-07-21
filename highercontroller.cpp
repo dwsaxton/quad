@@ -15,7 +15,8 @@ const double MaxPitchAcceleration = 50;
 HigherController::HigherController() {
   have_control_ = false;
   controller_ = new Controller();
-  target_pos_ = Vector3d(4, 4, 12);
+  target_pos_ = Vector3d(0, 15, 4);
+  prev_intercept_duration_ = 1;
 }
 
 void HigherController::giveControl(bool haveControl) {
@@ -31,11 +32,12 @@ void HigherController::step() {
   QuadState state = World::self()->simulatedQuad()->state();
 
   // TODO this is massive memory leak
-  Path *intercept = interceptForTarget(state);
+  SimpleQuadraticIntercept sqi;
+  Path *intercept = interceptForTarget(state, &sqi);
   World::self()->simulatedQuad()->path_ = intercept;
 
   // Sanity check
-  double intercept_duration = intercept->duration();
+  prev_intercept_duration_ = intercept->duration();
 //   cout << "Intercept duration: " << intercept_duration << endl;
 //   cout << "Pos at intercept: " << intercept->position(intercept_duration).transpose() << endl;
 //   cout << "Vel at intercept: " << intercept->velocity(intercept_duration).transpose() << endl;
@@ -93,14 +95,14 @@ void HigherController::step() {
   controller_->step(outputs);
 }
 
-Path *HigherController::interceptForTarget(QuadState const& state) const {
+Path *HigherController::interceptForTarget(QuadState const& state, SimpleQuadraticIntercept *simpleIntercept) const {
   QuadraticIntercept intercept;
   intercept.state_ = state;
   intercept.max_linear_acceleration_ = MaxLinearAcceleration;
   intercept.max_pitch_acceleration_ = MaxPitchAcceleration;
   intercept.target_ = stateTargetToQuadratic();
   bool found;
-  Path * path = intercept.interceptPath(&found);
+  Path * path = intercept.interceptPath(prev_intercept_duration_ - TsControllerTarget(), &found, simpleIntercept);
   if (!found) {
     cout << "Warning: intercept path not found!" << endl;
   }

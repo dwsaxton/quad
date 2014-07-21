@@ -7,7 +7,7 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} /usr/include/eige
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 set(CMAKE_AUTOMOC ON)
-set(Quad_SRCS linearplanner.cpp quadratic3d.cpp quadraticintercept.cpp rotationplanner.cpp highercontroller.cpp simplequadraticintercept.cpp EigenQP.cpp sensors.cpp observer.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp world.cpp observer.cpp mpc.cpp controller.cpp main.cpp glquad.cpp)
+set(Quad_SRCS pathinterceptplanner.cpp linearplanner3d.cpp interceptplot.cpp linearplanner.cpp quadratic3d.cpp quadraticintercept.cpp rotationplanner.cpp highercontroller.cpp simplequadraticintercept.cpp EigenQP.cpp sensors.cpp observer.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp world.cpp observer.cpp mpc.cpp controller.cpp main.cpp glquad.cpp)
 set(Quad_FORMS interface.ui)
 QT4_WRAP_UI(Quad_FORMS_HEADERS ${Quad_FORMS})
 qt4_automoc(${Quad_SRCS})

@@ -119,7 +119,7 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
 {
    Quad *q = World::self()->simulatedQuad();
    Vector3d a = q->info().force / q->M;
-   a += 9.81 * q->state().rotateSpaceToBody( ez );
+   a += GRAVITY * q->state().rotateSpaceToBody( ez );
    Vector3d x = stepWalk( step, m_ba, a, bias_scale, bias_add );
    
 //    if ( World::self()->environment() == World::Simulation )
