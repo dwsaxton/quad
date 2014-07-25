@@ -3,6 +3,7 @@
 
 #include <QWidget>
 
+#include "linearplanner3d.h"
 #include "simplequadraticintercept.h"
 
 class InterceptPlot : public QWidget {
@@ -11,7 +12,7 @@ class InterceptPlot : public QWidget {
 public:
   InterceptPlot(QWidget *parent);
 
-  void setIntercept(SimpleQuadraticIntercept const& intercept, double intercept_time);
+  void setIntercept(const LinearPlanner3d& intercept, double intercept_time);
   
   double t_min;
   double t_max;
@@ -23,7 +24,7 @@ protected:
   QPointF coordToPoint(double x, double y) const;
 
 private:
-  SimpleQuadraticIntercept intercept_;
+  LinearPlanner3d intercept_;
   int width_;
   int height_;
   int steps_;

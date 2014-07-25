@@ -9,7 +9,7 @@ InterceptPlot::InterceptPlot(QWidget *parent) {
   f_max = 6;
   width_ = 0;
   height_ = 0;
-  steps_ = 100;
+  steps_ = 200;
   intercept_time_ = 0;
 }
 
@@ -23,7 +23,7 @@ void InterceptPlot::paintEvent(QPaintEvent *) {
   painter.drawLine(coordToPoint(t_min, 0), coordToPoint(t_max, 0));
 
   QPointF prev;
-  painter.setRenderHint(QPainter::Antialiasing);
+//   painter.setRenderHint(QPainter::Antialiasing);
   for (int i=0; i<steps_; ++i) {
     double t = t_min + i * (t_max - t_min) / steps_;
     QPointF next = coordToPoint(t, intercept_.f(t));
@@ -37,7 +37,7 @@ void InterceptPlot::paintEvent(QPaintEvent *) {
   painter.drawPoint(coordToPoint(intercept_time_, 0));
 }
 
-void InterceptPlot::setIntercept(SimpleQuadraticIntercept const& intercept, double intercept_time) {
+void InterceptPlot::setIntercept(LinearPlanner3d const& intercept, double intercept_time) {
   intercept_time_ = intercept_time;
   intercept_ = intercept;
   repaint();

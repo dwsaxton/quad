@@ -1,6 +1,5 @@
 #ifndef LINEARPLANNER_H
 #define LINEARPLANNER_H
-#include <time.h>
 
 /**
  * We have an initial position and velocity, and wish to achieve a target position and velocity.
@@ -15,6 +14,8 @@ public:
 
   void getPosVel(double time, double *x, double *v) const;
   double duration() const;
+  // Calculates and applies the max acceleration to be applied to achieve the given duration
+  void updateMaxAccelForDuration(double duration);
 
 private:
   void plan() const;
@@ -31,4 +32,4 @@ private:
   mutable double params_changed_;
 };
 
-#endif // LINEARQUADRATICPLANNER_H
+#endif // LINEARPLANNER_H

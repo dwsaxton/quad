@@ -3,6 +3,7 @@
 
 #include <QMap>
 
+#include "linearplanner3d.h"
 #include "path.h"
 #include "quadstate.h"
 #include "quadratic3d.h"
@@ -29,7 +30,7 @@ public:
   // The pointer found is set to true or false depending on whether a valid path was found. If no
   // trajectory was found, then will return the trajectory to the current target_ position
   // (at t=0).
-  Path *interceptPath(double T_hint, bool* found, SimpleQuadraticIntercept* simpleIntercept) const;
+  Path *interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const;
 };
 
 class CompletePath : public Path {

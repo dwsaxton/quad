@@ -9,13 +9,13 @@ using namespace std;
 #include "world.h"
 
 // TODO these constants may be hard coded elsewhere (so check!), and besides, we should calculate them
-const double MaxLinearAcceleration = 15;
+const double MaxLinearAcceleration = 20;
 const double MaxPitchAcceleration = 50;
 
 HigherController::HigherController() {
   have_control_ = false;
   controller_ = new Controller();
-  target_pos_ = Vector3d(0, 15, 4);
+  target_pos_ = Vector3d(0, 15, 12);
   prev_intercept_duration_ = 1;
 }
 
@@ -32,15 +32,16 @@ void HigherController::step() {
   QuadState state = World::self()->simulatedQuad()->state();
 
   // TODO this is massive memory leak
-  SimpleQuadraticIntercept sqi;
+  LinearPlanner3d sqi;
   Path *intercept = interceptForTarget(state, &sqi);
   World::self()->simulatedQuad()->path_ = intercept;
+  World::self()->simulatedQuad()->intercept = sqi;
 
   // Sanity check
   prev_intercept_duration_ = intercept->duration();
-//   cout << "Intercept duration: " << intercept_duration << endl;
-//   cout << "Pos at intercept: " << intercept->position(intercept_duration).transpose() << endl;
-//   cout << "Vel at intercept: " << intercept->velocity(intercept_duration).transpose() << endl;
+//   cout << "Intercept duration: " << prev_intercept_duration_ << endl;
+//   cout << "Pos at intercept: " << intercept->position(prev_intercept_duration_).transpose() << endl;
+//   cout << "Vel at intercept: " << intercept->velocity(prev_intercept_duration_).transpose() << endl;
 
   Vector3d target_pos = intercept->position(time_step);
   Vector3d target_vel = intercept->velocity(time_step);
@@ -95,7 +96,7 @@ void HigherController::step() {
   controller_->step(outputs);
 }
 
-Path *HigherController::interceptForTarget(QuadState const& state, SimpleQuadraticIntercept *simpleIntercept) const {
+Path *HigherController::interceptForTarget(QuadState const& state, LinearPlanner3d *simpleIntercept) const {
   QuadraticIntercept intercept;
   intercept.state_ = state;
   intercept.max_linear_acceleration_ = MaxLinearAcceleration;

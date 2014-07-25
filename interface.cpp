@@ -165,7 +165,7 @@ void Interface::updateLabels()
    
    // Update plot 
    double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
-//    interceptPlot->setIntercept(quad->intercept, duration);
+   interceptPlot->setIntercept(quad->intercept, duration);
    
    
    if ( World::self()->isRunning() )

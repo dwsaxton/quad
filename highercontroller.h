@@ -6,6 +6,7 @@ using namespace Eigen;
 #include <QObject>
 
 class Controller;
+class LinearPlanner3d;
 class Path;
 class Quadratic3d;
 class QuadState;
@@ -25,7 +26,7 @@ public Q_SLOTS:
 
 private:
   Quadratic3d stateTargetToQuadratic() const;
-  Path* interceptForTarget(const QuadState& state, SimpleQuadraticIntercept * simpleIntercept) const;
+  Path* interceptForTarget(const QuadState& state, LinearPlanner3d* simpleIntercept) const;
 
   Vector3d target_pos_;
   bool have_control_;

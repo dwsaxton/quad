@@ -7,7 +7,7 @@ using namespace std;
 double newtonSearch(std::function< double (double)> fn, double x, bool* found) {
   // TODO make these parameters of this function?
   int maxIt = 40;
-  double eps = 1e-6;
+  double eps = 1e-8;
   double eps_deriv = 1e-5;
   for (int i = 0; i < maxIt; ++i) {
     double value = fn(x);
@@ -19,7 +19,7 @@ double newtonSearch(std::function< double (double)> fn, double x, bool* found) {
     double prev = x;
     x -= value / derivative;
     if (x < 0) {
-      x = prev / 2.0 + 0.1;
+      x = prev / 2.0;
     } else if (!isfinite(x) || x > 1e6) {
       x = 1e6;
     }

@@ -3,6 +3,7 @@
 #include <iostream>
 using namespace std;
 
+#include "linearplanner3d.h"
 #include "simplequadraticintercept.h"
 #include "world.h"
 
@@ -11,11 +12,12 @@ QuadraticIntercept::QuadraticIntercept() {
   max_pitch_acceleration_ = -1;
 }
 
-Path* QuadraticIntercept::interceptPath(double T_hint, bool* found, SimpleQuadraticIntercept* simpleIntercept) const {
+Path* QuadraticIntercept::interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const {
   assert(max_linear_acceleration_ > 0);
   assert(max_pitch_acceleration_ > 0);
 
-  SimpleQuadraticIntercept simple;
+  LinearPlanner3d simple;
+//   SimpleQuadraticIntercept simple;
   simple.max_linear_acceleration_ = max_linear_acceleration_;
   simple.max_pitch_acceleration_ = max_pitch_acceleration_;
 
