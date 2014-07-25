@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QVector>
 
-#include "mpc.h"
+#include "ssc.h"
 #include "quad.h"
 
 typedef Matrix<double, QUAD_STATE_SIZE, QUAD_STATE_SIZE> MatrixA;
@@ -19,26 +19,17 @@ struct LinearQuad
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  MatrixA Ac;
-  MatrixB Bc;
-  QuadStateVector f0;
-  QuadStateVector x0;
-  Vector4d um;
+  MatrixB B;
+  QuadStateVector xstar;
 };
-LinearQuad linearize( const QuadState & qsx0, const Vector4d & u0 );
-
+LinearQuad linearize(const QuadState & initial, const Vector4d & u0, double time_step);
 
 class ControlledOutput
 {
 public:
   ControlledOutput();
-  
-  void reset();
-  
-  bool used;
-  QVector<double> value;
+  double value;
   double weight;
-  void setConstValue( double v );
 };
 
 
@@ -51,9 +42,8 @@ public:
   void step(QVector<ControlledOutput> const& next);
   
 private:
-  void initMpc();
-  void updateMpc(QVector<ControlledOutput> const& next);
-  void addPropConstraints();
+  void initSSC();
+  void updateSSC(QVector<ControlledOutput> const& next);
 
   VectorXd m_predX;
   
@@ -63,7 +53,7 @@ private:
   // Previously applied input
   Vector4d m_prev_u;
   
-  Mpc m_mpc;
+  SSC ssc_;
 };
 
 #endif

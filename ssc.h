@@ -4,6 +4,8 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
+void testSsc();
+
 /**
  * "Single step" controller. Simplified version of MPC. Only do one step, so
  * controls are easier to specify. We have a system of the form
@@ -28,7 +30,6 @@ public:
    
   VectorXd x0;
   MatrixXd B;
-  VectorXd d; // disturbance
 
   /**
   * n is the dimension of x and x_0, the number of variables in the system.
@@ -54,24 +55,14 @@ public:
   MatrixXd R;
   /**
   * Constraint on control input change:
-  * E \Delta U <= E0
+  * E du <= E0
   */
   MatrixXd E;
   /**
   * Constraint on control input change:
-  * E \Delta U <= E0
+  * E du <= E0
   */
   VectorXd E0;
-  /**
-  * Constraint on trajectory:
-  * G (x_1, \ldots, x_{H_p}) \leq G0
-  */
-  MatrixXd G;
-  /**
-  * Constraint on trajectory:
-  * G (x_1, \ldots, x_{H_p}) \leq G0
-  */
-  VectorXd G0;
 
   /**
   * Calculate the optimal change in input u to apply. This function also
