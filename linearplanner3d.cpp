@@ -99,5 +99,5 @@ double LinearPlanner3dPath::duration() const {
 
 Vector3d LinearPlanner3dPath::initialAccelerationDirection() const {
   // TODO is this a good way of doing it?
-  return velocity(1e-4).normalized();
+  return velocity(1e-2).normalized();
 }

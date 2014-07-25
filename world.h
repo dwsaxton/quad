@@ -11,7 +11,7 @@ const int TsWorldMs = 12;
 inline double TsWorldTarget() { return TsWorldMs*1e-3; }
 
 // "Samping interval" Ts; the period of time each step of the controller corresponds to.
-const int TsControllerMs = 4*TsWorldMs;
+const int TsControllerMs = TsWorldMs;
 inline double TsControllerTarget() { return TsControllerMs*1e-3; }
 
 const double GRAVITY = 9.8;

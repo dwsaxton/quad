@@ -130,29 +130,31 @@ void Quad::setPropInput( int i, double o )
 }
 
 
-void Quad::step()
+void Quad::step(double period)
 {
-   double period = TsWorldTarget();
+  if (period < 0) {
+    period = TsWorldTarget();
+  }
    
-   // "target" step length
-   double delta = 0.01;
-   
-   int steps = ceil(period / delta);
-   
-   // correct delta
-   delta = period / steps;
-   
-   for ( int i = 0; i < steps; ++i )
-   {
-      calcDeriv( &k1, m_state, m_propInput, m_wind );
-      calcDeriv( &k2, m_state + k1*(delta/2), m_propInput, m_wind );
-      calcDeriv( &k3, m_state + k2*(delta/2), m_propInput, m_wind );
-      calcDeriv( &k4, m_state + k3*delta, m_propInput, m_wind );
-      
-      m_state += (k1+k2*2+k3*2+k4)*(delta/6);
-      
-      m_state.orient.normalize();
-   }
+  // "target" step length
+  double delta = 0.01;
+  
+  int steps = ceil(period / delta);
+  
+  // correct delta
+  delta = period / steps;
+  
+  for ( int i = 0; i < steps; ++i )
+  {
+    calcDeriv( &k1, m_state, m_propInput, m_wind );
+    calcDeriv( &k2, m_state + k1*(delta/2), m_propInput, m_wind );
+    calcDeriv( &k3, m_state + k2*(delta/2), m_propInput, m_wind );
+    calcDeriv( &k4, m_state + k3*delta, m_propInput, m_wind );
+    
+    m_state += (k1+k2*2+k3*2+k4)*(delta/6);
+    
+    m_state.orient.normalize();
+  }
 }
 //END class Quad
 

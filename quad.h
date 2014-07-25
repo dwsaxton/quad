@@ -66,8 +66,9 @@ public:
   void reset();
   /**
     * Updates the quadrocopter position etc by stepping to the given time.
+    * If period < 0, then uses the default (World) stepping time.
     */
-  void step();
+  void step(double period = -1);
   
   /**
     * Set the input to the quadrocopter.

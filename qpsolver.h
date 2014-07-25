@@ -18,15 +18,15 @@ namespace QP {
 
 class Problem
 {
-   public:  
-      MatrixXd Phi;
-      VectorXd phi;
-      MatrixXd H;
-      VectorXd h;
-      MatrixXd Omega;
-      VectorXd omega;
-      
-      virtual bool dimensionsValid() const;
+public:  
+  MatrixXd Phi;
+  VectorXd phi;
+  MatrixXd H;
+  VectorXd h;
+  MatrixXd Omega;
+  VectorXd omega;
+
+  virtual bool dimensionsValid() const;
 };
 
 

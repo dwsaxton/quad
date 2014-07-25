@@ -5,8 +5,8 @@
 InterceptPlot::InterceptPlot(QWidget *parent) {
   t_min = 0;
   t_max = 10;
-  f_min = -6;
-  f_max = 6;
+  f_min = -3;
+  f_max = 3;
   width_ = 0;
   height_ = 0;
   steps_ = 200;
