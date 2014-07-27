@@ -4,6 +4,10 @@
 #include <iostream>
 using namespace std;
 
+#include "linearplanner3d.h"
+#include "simplequadraticintercept.h"
+#include "quad.h"
+
 double newtonSearch(std::function< double (double)> fn, double x, bool* found) {
   // TODO make these parameters of this function?
   int maxIt = 40;
@@ -65,6 +69,29 @@ double binarySearch(std::function<double (double)> fn, double left, double right
 }
 
 PathInterceptPlanner::PathInterceptPlanner() {
-  max_linear_acceleration_ = 1;
-  max_pitch_acceleration_ = 1;
+}
+
+void TestInterceptPoint(PathInterceptPlanner *planner, Quadratic3d const& target) {
+  planner->target_ = target;
+  bool found;
+  shared_ptr<Path> path = planner->interceptPath(1, &found);
+  assert(found);
+  double duration = path->duration();
+  Vector3d pos = path->position(duration);
+  Vector3d target_pos = target.eval(duration);
+  Vector3d vel = path->velocity(duration);
+  Vector3d target_vel = target.derivative().eval(duration);
+  assert((pos - target_pos).norm() < 1e-3);
+  assert((vel - target_vel).norm() < 1e-3);
+}
+
+void TestPathInterceptPlanner(PathInterceptPlanner *planner) {
+  TestInterceptPoint(planner, Quadratic3d({0, 0, 5}, {0, 0, 1}, {-1, 14, 14}));
+}
+
+void TestPathInterceptPlanners() {
+  LinearPlanner3d linear_planner;
+  SimpleQuadraticIntercept quadratic_planner;
+  TestPathInterceptPlanner(&linear_planner);
+  TestPathInterceptPlanner(&quadratic_planner);
 }

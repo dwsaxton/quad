@@ -16,13 +16,6 @@ public:
   // target trajectory, where T = 0 is the current time
   Quadratic3d target_;
 
-  // maximum linear acceleration
-  double max_linear_acceleration_;
-
-  // maximum pitch or roll acceleration (yaw acceleration will be different, but we don't care
-  // about this) in radians per second per second.
-  double max_pitch_acceleration_;
-
   // current quadcopter state
   QuadState state_;
 
@@ -30,12 +23,12 @@ public:
   // The pointer found is set to true or false depending on whether a valid path was found. If no
   // trajectory was found, then will return the trajectory to the current target_ position
   // (at t=0).
-  Path *interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const;
+  shared_ptr<Path> interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const;
 };
 
 class CompletePath : public Path {
 public:
-  CompletePath(Path *original, QuadState const& quad_state);
+  CompletePath(shared_ptr<Path> original, QuadState const& quad_state);
 
   Vector3d position(double t) const;
   Vector3d velocity(double t) const;
@@ -43,7 +36,7 @@ public:
   Vector3d initialAccelerationDirection() const;
 
 private:
-  Path *original_;
+  shared_ptr<Path> original_;
   QuadState quad_state_;
 };
 

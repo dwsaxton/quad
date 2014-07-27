@@ -25,8 +25,10 @@ public:
   virtual void setupForMaxAccel(double max_accel) = 0;
   /**
    * @return whether the planner is valid under the conditions imposed.
+   * @param penalty can be "how far from valid we are", used for numerical
+   * stepping.
    */
-  virtual bool isValid() const = 0;
+  virtual bool isValid(double *penalty = 0) const = 0;
   /**
    * @return the position and velocity at the given time.
    */

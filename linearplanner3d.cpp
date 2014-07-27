@@ -4,29 +4,22 @@
 using namespace std;
 
 #include "linearplannermono.h"
+#include "world.h"
 
-Path* LinearPlanner3d::interceptPath(double T_hint, bool *found) const {
+shared_ptr<Path> LinearPlanner3d::interceptPath(double T_hint, bool *found) const {
   bool foundMono;
   LinearPlanner3dPath monoPath = interceptPath(true, &foundMono);
   bool foundFull;
   LinearPlanner3dPath fullPath = interceptPath(false, &foundFull);
   
-  bool usingMono;
-  LinearPlanner3dPath path;
-  if (foundMono && monoPath.isValid() && durationCost(monoPath, true) < durationCost(fullPath, false)) {
-    path = monoPath;
-    usingMono = true;
-    *found = true;
-  } else {
-    path = fullPath;
-    usingMono = false;
-    *found = foundFull;
-  }
+  bool useMono = foundMono && monoPath.isValid() && durationCost(monoPath, true) < durationCost(fullPath, false);
+  LinearPlanner3dPath path = useMono ? monoPath : fullPath;
+  *found = useMono ? true : foundFull;
   double T = path.duration();
 
-  cout << "usingMono: " << usingMono << " T: " << T <<" path.position(T)=" << path.position(T).transpose() << " target: " << target_.eval(T).transpose()
+  cout << "usingMono: " << useMono << " T: " << T <<" path.position(T)=" << path.position(T).transpose() << " target: " << target_.eval(T).transpose()
       << " path.velocity(T)=" << path.velocity(T).transpose() << " target vel: " << target_.derivative().eval(T).transpose() << endl;
-  return new LinearPlanner3dPath(path); // TODO massive memory leak
+  return shared_ptr<Path>(new LinearPlanner3dPath(path));
 }
 
 LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) const {
@@ -34,7 +27,7 @@ LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) co
   double left = 1e-4; // always search for positive time. (can't fly backwards in time!)
   double right = 10;
   double valueLeft = f(left, useMono);
-  while ((f(right, useMono) > 0) == (valueLeft > 0) && right < 1e6) {
+  while ((f(right, useMono) > 0) == (valueLeft > 0) && right < 1e5) {
     right *= 2;
   }
   if (right >= 1e6) {
@@ -56,30 +49,18 @@ LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) co
 LinearPlanner3dPath LinearPlanner3d::calcInterceptPathForT(double T, bool useMono) const {
   Vector3d pos = target_.eval(T);
   Vector3d vel = target_.derivative().eval(T);
-
-  LinearPlanner3dPath path;
-  if (useMono) {
-    path.initMono();
-  } else {
-    path.initFull();
-  }
-  path.setTarget(max_linear_acceleration_, pos, vel);
-  double duration = path.duration();
-  for (int i = 0; i < 3; ++i ) {
-    path.planners_[i]->setupForDuration(duration);
-  }
-
-  if (path.isValid() && (pos - path.position(T)).norm() > 0.01) {
-    Vector3d position = path.position(T);
-    bool bad = true;
-    position = path.position(T);
-  }
+  LinearPlanner3dPath path(useMono);
+  path.initForTarget(pos, vel);
   return path;
 }
 
 double LinearPlanner3d::f(double T, bool useMono) const {
   LinearPlanner3dPath path = calcInterceptPathForT(T, useMono);
-  return durationCost(path, useMono) - T;
+  double path_duration = path.duration();
+  // Translate an invalid path into a large time penalty so we avoid them.
+  double time_penalty = 0;
+  path.isValid(&time_penalty);
+  return path.duration() + 100 * time_penalty - T;
 }
 
 double LinearPlanner3d::durationCost(LinearPlanner3dPath const& path, bool useMono) const {
@@ -91,7 +72,7 @@ double LinearPlanner3d::durationCost(LinearPlanner3dPath const& path, bool useMo
   double rotation_required = max(0.0, angle - angle_threshold);
 
   // TODO this is not a good estimate for the length of time required for rotation
-  d += 4 * sqrt(rotation_required / max_pitch_acceleration_);
+  d += 4 * sqrt(rotation_required / MaxPitchAcceleration);
 
   if (!useMono) {
     d += 4; // penalty for not using mono-acceleration
@@ -100,23 +81,23 @@ double LinearPlanner3d::durationCost(LinearPlanner3dPath const& path, bool useMo
 }
 
 
-void LinearPlanner3dPath::initMono() {
+LinearPlanner3dPath::LinearPlanner3dPath(bool mono_in_z) {
   planners_[0] = shared_ptr<Planner1d>(new LinearPlanner());
   planners_[1] = shared_ptr<Planner1d>(new LinearPlanner());
-  planners_[2] = shared_ptr<Planner1d>(new LinearPlannerMono());
+  planners_[2] = shared_ptr<Planner1d>(
+      mono_in_z ? static_cast<Planner1d*>(new LinearPlannerMono()) : static_cast<Planner1d*>(new LinearPlanner()));
 }
 
-void LinearPlanner3dPath::initFull() {
-  for (int i = 0; i < 3; ++i) {
-    planners_[i] = shared_ptr<Planner1d>(new LinearPlanner());
-  }
-}
-
-void LinearPlanner3dPath::setTarget(double max_accel, Vector3d const& pos, Vector3d const& vel) {
+double LinearPlanner3dPath::initForTarget(const Vector3d& pos, const Vector3d& vel) {
+  double duration = 0;
   for (int i = 0; i < 3; ++i) {
     planners_[i]->setTarget(pos[i], vel[i]);
-    planners_[i]->setupForMaxAccel(max_accel / (i == 2 ? 1 : 4) /* TODO this is smudge hack factor */ );
+    duration = max(duration, planners_[i]->getMinDuration(MaxLinearAcceleration / (i == 2 ? 1 : 4) /* TODO this is smudge hack factor */ ));
   }
+  for (int i = 0; i < 3; ++i ) {
+    planners_[i]->setupForDuration(duration);
+  }
+  return duration;
 }
 
 Vector3d LinearPlanner3dPath::position(double t) const {
@@ -148,12 +129,28 @@ Vector3d LinearPlanner3dPath::initialAccelerationDirection() const {
   return velocity(1e-2).normalized();
 }
 
-bool LinearPlanner3dPath::isValid() const {
+bool LinearPlanner3dPath::isValid(double* penalty) const {
+  bool valid = true;
+  if (penalty) {
+    *penalty = 0;
+  }
   for (int i = 0; i < 3; ++i) {
-    if (!planners_[i] || !planners_[i]->isValid()) {
-      return false;
+    double local_penalty = 0;
+    if (!planners_[i] || !planners_[i]->isValid(&local_penalty)) {
+      valid = false;
+      if (penalty) {
+        *penalty += local_penalty;
+      }
     }
   }
-  return true;
+  return valid;
 }
 
+void TestLinearPlanner3d() {
+  LinearPlanner3d planner;
+  planner.target_ = Quadratic3d({0, -3, 4}, {0, -7, -2}, {0, 2, 18});
+  bool found;
+  LinearPlanner3dPath path = planner.interceptPath(true, &found);
+  assert(found);
+  assert(path.isValid());
+}

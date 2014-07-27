@@ -120,7 +120,7 @@ void GLQuad::drawAxes()
 }
 
 void GLQuad::drawIntercept() {
-  Path *intercept = World::self()->simulatedQuad()->path_;
+  shared_ptr<Path> intercept = World::self()->simulatedQuad()->path_;
   if (intercept == nullptr) {
     return;
   }

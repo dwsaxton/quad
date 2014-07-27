@@ -4,6 +4,8 @@
 #include <iostream>
 using namespace std;
 
+#include "world.h"
+
 double PathInfo::accelDurationAtTime(double t) const {
   return max(0.0, min(t - rotation_duration, accel_duration));
 }
@@ -18,7 +20,7 @@ double PathInfo::lengthTraveled(double t, double accel) const {
   return length;
 }
 
-Path* SimpleQuadraticIntercept::interceptPath(double T_hint, bool *found) const {
+shared_ptr<Path> SimpleQuadraticIntercept::interceptPath(double T_hint, bool* found) const {
   // Do search for correct T
   double left = 0; // always search for positive time. (can't fly backwards in time!)
 
@@ -33,7 +35,7 @@ Path* SimpleQuadraticIntercept::interceptPath(double T_hint, bool *found) const 
     right *= 2;
   }
   if (right >= maxT) {
-    return new PathFromQuadratic(calcInterceptPathForT(0), max_linear_acceleration_);
+    return shared_ptr<Path>(new PathFromQuadratic(calcInterceptPathForT(0), MaxLinearAcceleration));
   }
 
   auto function = [&] (double x) { return f(x); };
@@ -42,7 +44,7 @@ Path* SimpleQuadraticIntercept::interceptPath(double T_hint, bool *found) const 
   double T = newtonSearch(function, T_hint, found);
 //   cout << "SimpleQuadraticIntercept::interceptPath: T: " << T << endl;
   PathInfo info = calcInterceptPathForT(T, true);
-  return new PathFromQuadratic(info, max_linear_acceleration_);
+  return shared_ptr<Path>(new PathFromQuadratic(info, MaxLinearAcceleration));
 }
 
 PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T, bool debug) const {
@@ -58,9 +60,9 @@ PathInfo SimpleQuadraticIntercept::calcInterceptPathForT(double T, bool debug) c
   double angle_threshold = M_PI / 4; // TODO should this be standardized somewhere?
 //   double angle_threshold = 0;
   double rotation_required = max(0.0, angle - angle_threshold);
-  info.rotation_duration = rotation_required / max_pitch_acceleration_; // TODO this is not a good estimate for the length of time required for rotation
+  info.rotation_duration = rotation_required / MaxPitchAcceleration; // TODO this is not a good estimate for the length of time required for rotation
   info.length = info.quadratic.length(1);
-  info.accel_duration = targetSpeed(T) / max_linear_acceleration_;
+  info.accel_duration = targetSpeed(T) / MaxLinearAcceleration;
 
   if (debug) {
     cout << endl << "T: " << T << endl;
@@ -89,7 +91,7 @@ double SimpleQuadraticIntercept::f(double T, PathInfo *info) const {
   }
   *info = calcInterceptPathForT(T);
 
-  return info->lengthTraveled(T, max_linear_acceleration_) - info->length;
+  return info->lengthTraveled(T, MaxLinearAcceleration) - info->length;
 }
 
 

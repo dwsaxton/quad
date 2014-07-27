@@ -82,7 +82,7 @@ public:
   QuadState state() const { return m_state; }
   QuadInfo info() const { return calcInfo( m_state, m_propInput, m_wind ); }
 
-  Path *path_;
+  shared_ptr<Path> path_;
   LinearPlanner3d intercept;
 
 private:

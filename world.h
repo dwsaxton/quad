@@ -19,6 +19,10 @@ const double GRAVITY = 9.8;
 const int CONTROLLER_HP = 1;
 const int CONTROLLER_HU = 1;
 
+// TODO should these constants be calculated?
+const double MaxLinearAcceleration = 40;
+const double MaxPitchAcceleration = 30;
+
 class QTimer;
 
 class HigherController;

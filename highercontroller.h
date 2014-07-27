@@ -1,8 +1,12 @@
 #ifndef HIGHERCONTROLLER_H
 #define HIGHERCONTROLLER_H
 
+#include <memory>
+using namespace std;
+
 #include <Eigen/Geometry>
 using namespace Eigen;
+
 #include <QObject>
 
 class Controller;
@@ -26,7 +30,7 @@ public Q_SLOTS:
 
 private:
   Quadratic3d stateTargetToQuadratic() const;
-  Path* interceptForTarget(const QuadState& state, LinearPlanner3d* simpleIntercept) const;
+  shared_ptr< Path > interceptForTarget(const QuadState& state, LinearPlanner3d* simpleIntercept) const;
 
   Vector3d target_pos_;
   bool have_control_;

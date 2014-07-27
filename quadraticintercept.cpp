@@ -8,18 +8,11 @@ using namespace std;
 #include "world.h"
 
 QuadraticIntercept::QuadraticIntercept() {
-  max_linear_acceleration_ = -1;
-  max_pitch_acceleration_ = -1;
 }
 
-Path* QuadraticIntercept::interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const {
-  assert(max_linear_acceleration_ > 0);
-  assert(max_pitch_acceleration_ > 0);
-
+shared_ptr<Path> QuadraticIntercept::interceptPath(double T_hint, bool* found, LinearPlanner3d* simpleIntercept) const {
   LinearPlanner3d simple;
 //   SimpleQuadraticIntercept simple;
-  simple.max_linear_acceleration_ = max_linear_acceleration_;
-  simple.max_pitch_acceleration_ = max_pitch_acceleration_;
 
   // Translate target
   simple.target_ = target_;
@@ -27,16 +20,16 @@ Path* QuadraticIntercept::interceptPath(double T_hint, bool* found, LinearPlanne
   simple.target_.b = state_.rotateSpaceToBody(simple.target_.b - state_.vel);
   simple.target_.a = state_.rotateSpaceToBody(simple.target_.a + Vector3d(0, 0, 0.5 * GRAVITY));
 
-  Path * path = simple.interceptPath(T_hint, found);
+  shared_ptr<Path> path = simple.interceptPath(T_hint, found);
 
   if (simpleIntercept) {
     *simpleIntercept = simple;
   }
   
-  return new CompletePath(path, state_);
+  return shared_ptr<Path>(new CompletePath(path, state_));
 }
 
-CompletePath::CompletePath(Path *original, QuadState const& quad_state) {
+CompletePath::CompletePath(shared_ptr< Path > original, const QuadState& quad_state) {
   original_ = original;
   quad_state_ = quad_state;
 }

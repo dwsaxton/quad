@@ -36,7 +36,7 @@ public:
  */
 class SimpleQuadraticIntercept : public PathInterceptPlanner {
 public:
-  Path *interceptPath(double T_hint, bool* found) const;
+  shared_ptr<Path> interceptPath(double T_hint, bool* found) const;
 
   // return the distance travelled by time T along the intercept path given by calcInterceptPath(T),
   // and the actual length of this intercept path

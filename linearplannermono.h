@@ -17,7 +17,7 @@ public:
   double getMinDuration(double max_accel) const;
   void setupForDuration(double duration);
   void setupForMaxAccel(double max_accel);
-  bool isValid() const;
+  bool isValid(double *penalty) const;
   void getPosVel(double time, double *x, double *v) const;
   void setTarget(double x, double v) { x1 = x; v1 = v; }
   double duration() const { return t0 + t1 + t2; }

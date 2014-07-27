@@ -8,10 +8,6 @@ using namespace std;
 #include "rotationplanner.h"
 #include "world.h"
 
-// TODO these constants may be hard coded elsewhere (so check!), and besides, we should calculate them
-const double MaxLinearAcceleration = 40;
-const double MaxPitchAcceleration = 30;
-
 HigherController::HigherController() {
   have_control_ = false;
   controller_ = new Controller();
@@ -33,7 +29,7 @@ void HigherController::step() {
 
   // TODO this is massive memory leak
   LinearPlanner3d sqi;
-  Path *intercept = interceptForTarget(state, &sqi);
+  shared_ptr<Path> intercept = interceptForTarget(state, &sqi);
   World::self()->simulatedQuad()->path_ = intercept;
   World::self()->simulatedQuad()->intercept = sqi;
 
@@ -90,14 +86,12 @@ void HigherController::step() {
   controller_->step(outputs);
 }
 
-Path *HigherController::interceptForTarget(QuadState const& state, LinearPlanner3d *simpleIntercept) const {
+shared_ptr<Path> HigherController::interceptForTarget(QuadState const& state, LinearPlanner3d *simpleIntercept) const {
   QuadraticIntercept intercept;
   intercept.state_ = state;
-  intercept.max_linear_acceleration_ = MaxLinearAcceleration;
-  intercept.max_pitch_acceleration_ = MaxPitchAcceleration;
   intercept.target_ = stateTargetToQuadratic();
   bool found;
-  Path * path = intercept.interceptPath(prev_intercept_duration_ - TsControllerTarget(), &found, simpleIntercept);
+  shared_ptr<Path> path = intercept.interceptPath(prev_intercept_duration_ - TsControllerTarget(), &found, simpleIntercept);
   if (!found) {
     cout << "Warning: intercept path not found!" << endl;
   }

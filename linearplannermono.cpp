@@ -22,12 +22,13 @@ void LinearPlannerMono::setupForDuration(double T) {
   // x = v^2 / (2*a) + v t2
   // The constraint t2 >= 0 implies that a >= v^2 / 2x
   // The constraint t1 <= T implies that a >= v / T
+  // The constraint t0 >= 0 implies that a >= v^2 / 2(Tv-x)
   // Other than these constraints, we take a to be as small as possible,
   // and calculate the necessary values of t0, t1 and t2
 
-  a = max(v1 / T, v1 == 0 ? 0 : v1 * v1 / 2 / x1);
+  a = max(v1 == 0 ? 0 : v1 * v1 / 2 / (T * v1 - x1), max(v1 / T, v1 == 0 ? 0 : v1 * v1 / 2 / x1));
   t1 = v1 == 0 ? 0 : v1 / a;
-  t2 = (x1 == 0 ? 0 : x1 / v1) - (v1 == 0 ? 0 : v1 / 2 / a);
+  t2 = (x1 == 0 ? 0 : x1 / v1) - t1 / 2;
   t0 = T - t1 - t2;
 }
 
@@ -35,13 +36,20 @@ void LinearPlannerMono::setupForMaxAccel(double max_accel) {
   a = max_accel;
   t0 = 0;
   t1 = v1 / max_accel;
-  t2 = (x1 == 0 ? 0 : x1 / v1) - v1 * v1 / 2 / a;
+  t2 = (x1 == 0 ? 0 : x1 / v1) - t1 / 2;
 }
 
-bool LinearPlannerMono::isValid() const {
+bool LinearPlannerMono::isValid(double *penalty) const {
   if (x1 < 0 || v1 < 0 || (v1 == 0 && x1 != 0) || t0 < 0 || t1 < 0 || t2 < 0
       || !isfinite(t0) || !isfinite(t1) || !isfinite(t2) || !isfinite(a)) {
+    if (penalty) {
+      assert(max(1.2, 1.4) == 1.4); // using double max
+      *penalty = max(0., -x1) + max(0., -v1) + max(0., -t0) + max(0., -t1) + max(0., -t2);
+    }
     return false;
+  }
+  if (penalty) {
+    *penalty = 0;
   }
   return true;
 }
