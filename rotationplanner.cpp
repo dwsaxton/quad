@@ -41,15 +41,16 @@ void RotationPlanner::calcNextStep(double time_step, Vector3d *heading, Vector3d
 
   // "x" component
   LinearPlanner planner;
-  planner.setMaxAccel(max_pitch_acceleration_);
   planner.setInitial(0, vx);
   planner.setTarget(distance, 0);
+  planner.setupForMaxAccel(max_pitch_acceleration_);
   double x1, v1;
   planner.getPosVel(time_step, &x1, &v1);
   
   // "y" component
   planner.setInitial(0, vy);
   planner.setTarget(0, 0);
+  planner.setupForMaxAccel(max_pitch_acceleration_);
   double x2, v2;
   planner.getPosVel(time_step, &x2, &v2);
 

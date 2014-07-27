@@ -14,6 +14,8 @@ double binarySearch(std::function<double (double)> fn, double left, double right
  */
 class PathInterceptPlanner {
 public:
+  PathInterceptPlanner();
+
   // target trajectory, where T = 0 is the current time
   Quadratic3d target_;
 

@@ -5,11 +5,11 @@
 InterceptPlot::InterceptPlot(QWidget *parent) {
   t_min = 0;
   t_max = 10;
-  f_min = -3;
-  f_max = 3;
+  f_min = -2;
+  f_max = 2;
   width_ = 0;
   height_ = 0;
-  steps_ = 200;
+  steps_ = 100;
   intercept_time_ = 0;
 }
 
@@ -22,15 +22,18 @@ void InterceptPlot::paintEvent(QPaintEvent *) {
   // Axis
   painter.drawLine(coordToPoint(t_min, 0), coordToPoint(t_max, 0));
 
-  QPointF prev;
-//   painter.setRenderHint(QPainter::Antialiasing);
-  for (int i=0; i<steps_; ++i) {
-    double t = t_min + i * (t_max - t_min) / steps_;
-    QPointF next = coordToPoint(t, intercept_.f(t));
-    if (i > 0 ) {
-      painter.drawLine(prev, next);
+  for (int mono = 0; mono < 2; ++mono) {
+    painter.setPen(QPen(mono == 0 ? Qt::red : Qt::blue, 1));
+    QPointF prev;
+  //   painter.setRenderHint(QPainter::Antialiasing);
+    for (int i=1; i<steps_; ++i) {
+      double t = t_min + i * (t_max - t_min) / steps_;
+      QPointF next = coordToPoint(t, intercept_.f(t, mono));
+      if (i > 0 ) {
+        painter.drawLine(prev, next);
+      }
+      prev = next;
     }
-    prev = next;
   }
 
   painter.setPen(QPen(Qt::black, 4));

@@ -135,15 +135,15 @@ void Quad::step(double period)
   if (period < 0) {
     period = TsWorldTarget();
   }
-   
+
   // "target" step length
-  double delta = 0.01;
-  
+  double delta = TsWorldTarget() + 1e-6 /* so that the ceil function below doesn't round up to one more */;
+
   int steps = ceil(period / delta);
-  
+
   // correct delta
   delta = period / steps;
-  
+
   for ( int i = 0; i < steps; ++i )
   {
     calcDeriv( &k1, m_state, m_propInput, m_wind );

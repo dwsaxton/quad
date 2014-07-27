@@ -1,35 +1,32 @@
 #ifndef LINEARPLANNER_H
 #define LINEARPLANNER_H
 
+#include "planner1d.h"
+
 /**
  * We have an initial position and velocity, and wish to achieve a target position and velocity.
  */
-class LinearPlanner {
+class LinearPlanner : public Planner1d {
 public:
   LinearPlanner();
 
-  void setInitial(double x, double v);
-  double setTarget(double x, double v);
-  double setMaxAccel(double max_accel);
-
+  double getMinDuration(double max_accel) const;
+  void setupForMaxAccel(double max_accel);
+  void setupForDuration(double duration);
+  bool isValid() const { return t0 >= 0 && t1 >= 0; }
   void getPosVel(double time, double *x, double *v) const;
-  double duration() const;
-  // Calculates and applies the max acceleration to be applied to achieve the given duration
-  void updateMaxAccelForDuration(double duration);
+  void setTarget(double x, double v);
+  void setInitial(double x, double v);
+  double duration() const { return t0 + t1; }
 
 private:
-  void plan() const;
-
   double x0;
   double v0;
   double x1;
   double v1;
-  double max_accel_;
-
-  mutable double t0;
-  mutable double t1;
-  mutable double a;
-  mutable double params_changed_;
+  double t0;
+  double t1;
+  double a;
 };
 
 #endif // LINEARPLANNER_H

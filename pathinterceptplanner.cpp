@@ -63,3 +63,8 @@ double binarySearch(std::function<double (double)> fn, double left, double right
   *found = false;
   return (left + right) / 2;
 }
+
+PathInterceptPlanner::PathInterceptPlanner() {
+  max_linear_acceleration_ = 1;
+  max_pitch_acceleration_ = 1;
+}

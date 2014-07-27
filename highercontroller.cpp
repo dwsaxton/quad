@@ -9,8 +9,8 @@ using namespace std;
 #include "world.h"
 
 // TODO these constants may be hard coded elsewhere (so check!), and besides, we should calculate them
-const double MaxLinearAcceleration = 20;
-const double MaxPitchAcceleration = 40;
+const double MaxLinearAcceleration = 40;
+const double MaxPitchAcceleration = 30;
 
 HigherController::HigherController() {
   have_control_ = false;
@@ -80,15 +80,13 @@ void HigherController::step() {
     outputs[QuadState::StateIndexomega + j].value = next_omega.coeff(j);
   }
 
-//   if (angle < M_PI/4 /* TODO used elsewhere too, shouldn't be hard-coded */) {
-//   if (false) {
-    for (int j = 0; j < 3; ++j) {
-      outputs[QuadState::StateIndexPos + j].weight = 10;
-      outputs[QuadState::StateIndexPos + j].value = target_pos.coeff(j);
-      outputs[QuadState::StateIndexVel + j].weight = 10;
-      outputs[QuadState::StateIndexVel + j].value = target_vel.coeff(j);
-    }
-//   }
+  for (int j = 0; j < 3; ++j) {
+    outputs[QuadState::StateIndexPos + j].weight = 10;
+    outputs[QuadState::StateIndexPos + j].value = target_pos.coeff(j);
+    outputs[QuadState::StateIndexVel + j].weight = 10;
+    outputs[QuadState::StateIndexVel + j].value = target_vel.coeff(j);
+  }
+
   controller_->step(outputs);
 }
 
