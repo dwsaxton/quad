@@ -19,7 +19,7 @@ public:
 
 private:
   double durationCost(LinearPlanner3dPath const& path, bool useMono) const;
-  LinearPlanner3dPath calcInterceptPathForT(double T, bool useMono) const;
+  LinearPlanner3dPath calcInterceptPathAtT(double T, bool useMono) const;
   LinearPlanner3dPath interceptPath(bool useMono, bool* found) const;
 
   friend void TestLinearPlanner3d();
@@ -34,6 +34,10 @@ public:
    * @return the duration taken to get to here.
    */
   double initForTarget(Vector3d const& pos, Vector3d const& vel);
+  /**
+   * Adjust each of the coordinate planners for the given duration
+   */
+  void adjustForDuration(double duration);
 
   bool isValid(double *penalty = 0) const;
   Vector3d position(double t) const;

@@ -131,7 +131,8 @@ void Controller::updateSSC(QVector<ControlledOutput> const& outputs) {
   ssc_.R = R;
 
   // Calculate constraints on propeller input
-  double max_abs_du = TsControllerTarget() / 0.5; // let's say takes 0.5 seconds to accelerate to full speed
+  double prop_start_time = 0.01; // time it takes for propellers to spin up or down to full speed
+  double max_abs_du = TsControllerTarget() / prop_start_time;
 //   double max_abs_du = 1;
   MatrixXd E(8, 4);
   VectorXd E0(8);

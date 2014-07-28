@@ -91,7 +91,7 @@ void TestPathInterceptPlanner(PathInterceptPlanner *planner) {
 
 void TestPathInterceptPlanners() {
   LinearPlanner3d linear_planner;
-  SimpleQuadraticIntercept quadratic_planner;
+//   SimpleQuadraticIntercept quadratic_planner;
   TestPathInterceptPlanner(&linear_planner);
-  TestPathInterceptPlanner(&quadratic_planner);
+//   TestPathInterceptPlanner(&quadratic_planner);
 }

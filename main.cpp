@@ -7,6 +7,7 @@
 #include "planner1d.h"
 #include "qpsolver.h"
 #include "quadratic3d.h"
+#include "rotationplanner.h"
 #include "ssc.h"
 
 int main(int argc, char *argv[])
@@ -18,6 +19,7 @@ int main(int argc, char *argv[])
   TestPlanner1ds();
   TestPathInterceptPlanners();
   TestLinearPlanner3d();
+  TestRotationPlanner();
 
   QApplication app(argc, argv);
   Interface interface;

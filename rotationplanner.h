@@ -4,6 +4,8 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
+void TestRotationPlanner();
+
 /**
  * Calculates a method of changing the orientation given the rotation acceleration constraints.
  */

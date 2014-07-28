@@ -20,7 +20,7 @@ const int CONTROLLER_HP = 1;
 const int CONTROLLER_HU = 1;
 
 // TODO should these constants be calculated?
-const double MaxLinearAcceleration = 40;
+const double MaxLinearAcceleration = 20;
 const double MaxPitchAcceleration = 30;
 
 class QTimer;

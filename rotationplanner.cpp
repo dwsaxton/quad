@@ -22,8 +22,16 @@ void RotationPlanner::calcNextStep(double time_step, Vector3d *heading, Vector3d
   Vector3d d = b - a;
   d -= a.dot(d) * a;
   if (d.norm() < 0.02) {
-    // TODO is this a good value? this strategy is a bit arbitrary.
-    d = v; // use velocity to define the great circle. (any great circle will roughly go through the point)
+    // Use velocity to define the great circle, if it is non-zero. (any great circle will roughly go through the point)
+    if (v.norm() > 0.02) {
+      d = v;
+    } else {
+      // Just need some other vector that is perpendicular to a
+      d = Vector3d(0, 0, 1).cross(a);
+      if (d.norm() < 0.02) {
+        d = Vector3d(0, 1, 0).cross(a);
+      }
+    }
   }
   d.normalize();
 
@@ -63,10 +71,25 @@ void RotationPlanner::calcNextStep(double time_step, Vector3d *heading, Vector3d
   Vector3d w = v1 * d + v2 * e; // TODO again not great if out of linear range
 
   double current_spin = current_omega_.dot(current_heading_);
-  double new_spin_abs = max(0.0, abs(current_spin) - time_step*max_pitch_acceleration_); // TODO also max physical pitch acceleration about z axis is likely to be different
+  double spin_abs = abs(current_spin);
+  double new_spin_abs = spin_abs < 1e-4 ? 0 : spin_abs * max(0.0, 1 - time_step*max_pitch_acceleration_/spin_abs); // TODO also max physical pitch acceleration about z axis is likely to be different
   double new_spin = current_spin > 0 ? new_spin_abs : -new_spin_abs;
 
   // General solution for angular velocity is of the form omega = c \cross v + \alpha * c, for any \alpha.
   // We want the z-axis spin to be new_spin, so this gives \alpha = new_spin
   *omega = c.cross(w) + new_spin * c;
+}
+
+void TestRotationPlanner() {
+  // Test when no rotation required
+  RotationPlanner planner;
+  Vector3d ez = {0, 0, 1};
+  planner.current_heading_ = ez;
+  planner.target_heading_ = ez;
+  planner.current_omega_.setZero();
+  Vector3d heading;
+  Vector3d omega;
+  planner.calcNextStep(0.1, &heading, &omega);
+  assert(heading == ez);
+  assert(omega.isZero());
 }

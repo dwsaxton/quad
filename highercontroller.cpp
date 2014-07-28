@@ -11,7 +11,7 @@ using namespace std;
 HigherController::HigherController() {
   have_control_ = false;
   controller_ = new Controller();
-  target_pos_ = Vector3d(0, 15, 12);
+  target_pos_ = Vector3d(4, 8, 12);
   prev_intercept_duration_ = 1;
 }
 

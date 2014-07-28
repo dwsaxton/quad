@@ -30,6 +30,17 @@ void LinearPlannerMono::setupForDuration(double T) {
   t1 = v1 == 0 ? 0 : v1 / a;
   t2 = (x1 == 0 ? 0 : x1 / v1) - t1 / 2;
   t0 = T - t1 - t2;
+
+  // Sometimes get a very small negative value due to rounding errors, but we don't want to
+  // mark this as invalid, so round up to zero if this is the case
+  auto clean = [] (double &x) {
+    if (x < 0 && x > -1e-6) {
+      x = 0;
+    }
+  };
+  clean(t0);
+  clean(t1);
+  clean(t2);
 }
 
 void LinearPlannerMono::setupForMaxAccel(double max_accel) {

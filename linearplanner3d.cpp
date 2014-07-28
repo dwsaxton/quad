@@ -11,6 +11,23 @@ shared_ptr<Path> LinearPlanner3d::interceptPath(double T_hint, bool *found) cons
   LinearPlanner3dPath monoPath = interceptPath(true, &foundMono);
   bool foundFull;
   LinearPlanner3dPath fullPath = interceptPath(false, &foundFull);
+
+  if (!foundMono || !monoPath.isValid()) {
+    // Try to find it again using binary search technique
+    double left = TsControllerTarget();
+    double right = 1e4;
+    for (int i = 0; i < 20; ++i) {
+      double mid = (left + right) / 2;
+      if (calcInterceptPathAtT(mid, true).isValid()) {
+        right = mid;
+      } else {
+        left = mid;
+      }
+    }
+    monoPath = calcInterceptPathAtT(right, true);
+    monoPath.adjustForDuration(right);
+    foundMono = true;
+  }
   
   bool useMono = foundMono && monoPath.isValid() && durationCost(monoPath, true) < durationCost(fullPath, false);
   LinearPlanner3dPath path = useMono ? monoPath : fullPath;
@@ -32,7 +49,7 @@ LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) co
   }
   if (right >= 1e6) {
     *found = false;
-    return calcInterceptPathForT(0, useMono);
+    return calcInterceptPathAtT(0, useMono);
   }
 
   auto function = [&] (double x) { return f(x, useMono); };
@@ -42,11 +59,11 @@ LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) co
   if (T < 0.1) {
     T = 0.1;
   }
-  T = newtonSearch(function, T, found);
-  return calcInterceptPathForT(T, useMono);
+//   T = newtonSearch(function, T, found);
+  return calcInterceptPathAtT(T, useMono);
 }
 
-LinearPlanner3dPath LinearPlanner3d::calcInterceptPathForT(double T, bool useMono) const {
+LinearPlanner3dPath LinearPlanner3d::calcInterceptPathAtT(double T, bool useMono) const {
   Vector3d pos = target_.eval(T);
   Vector3d vel = target_.derivative().eval(T);
   LinearPlanner3dPath path(useMono);
@@ -55,7 +72,7 @@ LinearPlanner3dPath LinearPlanner3d::calcInterceptPathForT(double T, bool useMon
 }
 
 double LinearPlanner3d::f(double T, bool useMono) const {
-  LinearPlanner3dPath path = calcInterceptPathForT(T, useMono);
+  LinearPlanner3dPath path = calcInterceptPathAtT(T, useMono);
   double path_duration = path.duration();
   // Translate an invalid path into a large time penalty so we avoid them.
   double time_penalty = 0;
@@ -75,7 +92,7 @@ double LinearPlanner3d::durationCost(LinearPlanner3dPath const& path, bool useMo
   d += 4 * sqrt(rotation_required / MaxPitchAcceleration);
 
   if (!useMono) {
-    d += 4; // penalty for not using mono-acceleration
+    d += 8; // penalty for not using mono-acceleration
   }
   return d;
 }
@@ -92,13 +109,18 @@ double LinearPlanner3dPath::initForTarget(const Vector3d& pos, const Vector3d& v
   double duration = 0;
   for (int i = 0; i < 3; ++i) {
     planners_[i]->setTarget(pos[i], vel[i]);
-    duration = max(duration, planners_[i]->getMinDuration(MaxLinearAcceleration / (i == 2 ? 1 : 4) /* TODO this is smudge hack factor */ ));
+    duration = max(duration, planners_[i]->getMinDuration(MaxLinearAcceleration / (i == 2 ? 1 : 2)));
   }
+  adjustForDuration(duration);
+  return duration;
+}
+
+void LinearPlanner3dPath::adjustForDuration(double duration) {
   for (int i = 0; i < 3; ++i ) {
     planners_[i]->setupForDuration(duration);
   }
-  return duration;
 }
+
 
 Vector3d LinearPlanner3dPath::position(double t) const {
   Vector3d pos;
@@ -126,7 +148,9 @@ double LinearPlanner3dPath::duration() const {
 
 Vector3d LinearPlanner3dPath::initialAccelerationDirection() const {
   // TODO is this a good way of doing it?
-  return velocity(1e-2).normalized();
+  double t = TsControllerTarget();
+//   return (velocity(t) + 100*Vector3d(0, 0, 0.5*t*t*MaxLinearAcceleration)).normalized();
+  return velocity(7*t).normalized();
 }
 
 bool LinearPlanner3dPath::isValid(double* penalty) const {
