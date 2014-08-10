@@ -1,6 +1,5 @@
 #include "controller.h"
 
-#include "mpc.h"
 #include "observer.h"
 #include "world.h"
 

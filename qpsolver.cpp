@@ -1,7 +1,6 @@
 #include "qpsolver.h"
 
 #include "eiquadprog.h"
-#include "EigenQP.h"
 
 #include <cassert>
 #include <iostream>

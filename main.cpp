@@ -2,7 +2,6 @@
 
 #include "interface.h"
 #include "linearplanner3d.h"
-#include "mpc.h"
 #include "onlinelearner.h"
 #include "pathinterceptplanner.h"
 #include "planner1d.h"
@@ -13,7 +12,6 @@
 
 int main(int argc, char *argv[])
 {
-//   mpcTest();
   QP::test();
   test_Quadratic3d();
   testSsc();
