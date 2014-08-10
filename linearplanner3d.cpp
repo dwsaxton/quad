@@ -150,7 +150,7 @@ Vector3d LinearPlanner3dPath::initialAccelerationDirection() const {
   // TODO is this a good way of doing it?
   double t = TsControllerTarget();
 //   return (velocity(t) + 100*Vector3d(0, 0, 0.5*t*t*MaxLinearAcceleration)).normalized();
-  return velocity(7*t).normalized();
+  return velocity(7*t).normalized(); // TODO this seems to work well when t = 48 ms, but we may adjust TsControllerTarget, in which case this becomes invalid. So maybe function of MaxPitchAcceleration?
 }
 
 bool LinearPlanner3dPath::isValid(double* penalty) const {

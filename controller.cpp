@@ -21,7 +21,8 @@ LinearQuad linearize(const QuadState & initial, const Vector4d & u0, double time
   Quad quad;
   quad.setState(initial);
   quad.setPropInput(u0);
-  
+//   quad.cF *= 0.5;
+
   LinearQuad linear_quad;
 
   quad.step(time_step);

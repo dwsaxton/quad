@@ -33,7 +33,6 @@ public:
   QuadModel();
 
   double M; // mass
-  double g; // gravity
   double I1, I2, I3; // inertia of body
   double IP; // inertia of propeller
   Vector3d c; // offset of center of mass

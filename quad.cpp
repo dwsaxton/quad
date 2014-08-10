@@ -10,7 +10,6 @@ QuadModel::QuadModel()
 {
    // Default values
    M = 2;
-   g = GRAVITY;
    I1 = 0.01;
    I2 = 0.01;
    I3 = 0.01;
@@ -74,7 +73,7 @@ QuadInfo QuadModel::calcInfo( const QuadState & state, const Vector4d & propInpu
    // Calculate force
    info.force.setZero();
    info.force.z() += info.F[0]+info.F[1]+info.F[2]+info.F[3];
-   info.force -= M * g * state.rotateSpaceToBody( ez );
+   info.force -= M * GRAVITY * state.rotateSpaceToBody( ez );
    info.force += state.rotateSpaceToBody( windForce );
    
    // Calculate torque
