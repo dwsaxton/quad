@@ -55,23 +55,15 @@ ControlledOutput::ControlledOutput() {
 //BEGIN class Controller
 Controller::Controller()
 {
-//    m_haveControl = false;
-//    m_outputs.resize( QUAD_STATE_SIZE );
    initSSC();
 }
 
-void Controller::step(const QVector< ControlledOutput >& next)
-{
+void Controller::step(const QVector< ControlledOutput >& next) {
   // TODO re-implement having a drift / disturbance
   assert(next.size() == QUAD_STATE_SIZE);
   m_prev_u = World::self()->simulatedQuad()->propInput();
   updateSSC(next);
-//   cout << "ssc_.x0:  " << ssc_.x0.transpose() << endl;
-//   cout << "ssc_.B: " << endl << ssc_.B << endl;
-//   cout << "ssc_.E: " << endl << ssc_.E << endl;
-//   cout << "ssc_.E0:   " << ssc_.E0.transpose() << endl;
   VectorXd du = ssc_.calc_du( &m_predX );
-//   cout << "du: " << du.transpose() << endl;
   VectorXd newu = m_prev_u + du;
 
   for ( int i = 0; i < 4; ++i )
@@ -132,9 +124,8 @@ void Controller::updateSSC(QVector<ControlledOutput> const& outputs) {
   ssc_.R = R;
 
   // Calculate constraints on propeller input
-  double prop_start_time = 0.01; // time it takes for propellers to spin up or down to full speed
+  double prop_start_time = 0.01; // time it takes for propellers to spin up or down to full speed TODO change this
   double max_abs_du = TsControllerTarget() / prop_start_time;
-//   double max_abs_du = 1;
   MatrixXd E(8, 4);
   VectorXd E0(8);
   E.setZero();

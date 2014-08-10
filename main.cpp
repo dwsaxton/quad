@@ -3,6 +3,7 @@
 #include "interface.h"
 #include "linearplanner3d.h"
 #include "mpc.h"
+#include "onlinelearner.h"
 #include "pathinterceptplanner.h"
 #include "planner1d.h"
 #include "qpsolver.h"
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
   TestPathInterceptPlanners();
   TestLinearPlanner3d();
   TestRotationPlanner();
+  TestOnlineLearner();
 
   QApplication app(argc, argv);
   Interface interface;
