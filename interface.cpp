@@ -14,71 +14,36 @@ using namespace std;
 
 Interface::Interface()
 {
-   new World;
-   
-   setupUi(this);
-   
-   m_propInputs[0] = prop1;
-   m_propInputs[1] = prop2;
-   m_propInputs[2] = prop3;
-   m_propInputs[3] = prop4;
-   
-   for ( int i = 0; i < 4; ++i )
-      connect( m_propInputs[i], SIGNAL(valueChanged(int)), this, SLOT(propInputsChanged()) );
-   
-   connect( runPauseButton, SIGNAL(clicked()), this, SLOT(runPauseQuad()) );
-   connect( resetButton, SIGNAL(clicked()), this, SLOT(resetQuad()) );
-   connect( controlAutomatic, SIGNAL(toggled(bool)), World::self()->controller(), SLOT(giveControl(bool)) );
-   
-   connect( environmentSimulation, SIGNAL(clicked()), this, SLOT(setEnvironmentSimulation()) );
-   connect( environmentActual, SIGNAL(clicked()), this, SLOT(setEnvironmentActual()) );
-   
-   World::self()->controller()->giveControl( controlAutomatic->isChecked() );
-   
-   QTimer *timer = new QTimer(this);
-   connect( timer, SIGNAL(timeout()), this, SLOT(updateLabels()) );
-   timer->start( 50 );
-   
-   if ( environmentSimulation->isChecked() )
-      setEnvironmentSimulation();
-   else
-      setEnvironmentActual();
-   
-   runPauseQuad();
-   
-   updateLabels();
+  new World;
+  
+  setupUi(this);
+  
+  m_propInputs[0] = prop1;
+  m_propInputs[1] = prop2;
+  m_propInputs[2] = prop3;
+  m_propInputs[3] = prop4;
+  
+  for ( int i = 0; i < 4; ++i ) {
+    connect( m_propInputs[i], SIGNAL(valueChanged(int)), this, SLOT(propInputsChanged()) );
+  }
+  
+  connect( runPauseButton, SIGNAL(clicked()), this, SLOT(runPauseQuad()) );
+  connect( resetButton, SIGNAL(clicked()), this, SLOT(resetQuad()) );
+  connect(controlAutomatic, SIGNAL(toggled(bool)), World::self(), SLOT(setAutomaticControl(bool)));
+
+  QTimer *timer = new QTimer(this);
+  connect( timer, SIGNAL(timeout()), this, SLOT(updateLabels()) );
+  timer->start( 50 );
+  
+  runPauseQuad();
+  
+  updateLabels();
 }
 
 
 Interface::~Interface()
 {
    delete World::self();
-}
-
-void Interface::setEnvironmentSimulation()
-{
-   World::self()->setEnvironment( World::Simulation );
-   
-   positionLabel->setVisible( true );
-   velocityLabel->setVisible( true );
-//    avLabel->setVisible( true );
-//    orientationLabel->setVisible( true );
-//    windLabel->setVisible( true );
-   
-   updateLabels();
-}
-
-void Interface::setEnvironmentActual()
-{
-   World::self()->setEnvironment( World::Actual );
-   
-   positionLabel->setVisible( false );
-   velocityLabel->setVisible( false );
-//    avLabel->setVisible( false );
-//    orientationLabel->setVisible( false );
-//    windLabel->setVisible( false );
-   
-   updateLabels();
 }
 
 double Interface::propInput( int i ) const
@@ -88,8 +53,9 @@ double Interface::propInput( int i ) const
 
 void Interface::propInputsChanged()
 {
-   for ( int i = 0; i < 4; ++i )
+   for ( int i = 0; i < 4; ++i ) {
       World::self()->simulatedQuad()->setPropInput( i, propInput(i) );
+   }
 }
 
 
@@ -120,28 +86,15 @@ VectorXd qCoeffs_wxyz( const Quaterniond & q )
 
 void Interface::updateLabels()
 {
-   bool simulation = World::self()->environment() == World::Simulation;
    Quad *quad = World::self()->simulatedQuad();
    
-   if ( simulation )
-   {
-      QuadState state = quad->state();
-   
-      positionLabel->setText( toCoords( state.pos ) );
-      velocityLabel->setText( toCoords( state.vel ) );
-//       avLabel->setText( toCoords( state.omega ) );
-//       orientationLabel->setText( toCoords( qCoeffs_wxyz(state.orient) ) );
-//       windLabel->setText( toCoords( World::self()->wind() ) );
-      
-//       connStatus->setText( "Simulation" );
-   }
-   else
-   {
-//       if ( World::self()->transceiver()->isConnected() )
-//          connStatus->setText( "Have connection" );
-//       else
-//          connStatus->setText( "No connection established" );
-   }
+  QuadState state = quad->state();
+
+  positionLabel->setText( toCoords( state.pos ) );
+  velocityLabel->setText( toCoords( state.vel ) );
+//   avLabel->setText( toCoords( state.omega ) );
+//   orientationLabel->setText( toCoords( qCoeffs_wxyz(state.orient) ) );
+//   windLabel->setText( toCoords( World::self()->wind() ) );
    
    Observer *o = World::self()->observer();
    QuadState pred = o->state();
@@ -164,43 +117,41 @@ void Interface::updateLabels()
    gpsLabel->setText( toCoords( s->readGPS() ) + "\n+-" + toCoords(s->var_bgps().array().sqrt(),1) );
    
    // Update plot 
-   double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
-   interceptPlot->setIntercept(quad->intercept, duration);
+//    double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
+//    interceptPlot->setIntercept(quad->intercept, duration);
    
    
-   if ( World::self()->isRunning() )
+   if ( World::self()->isRunning() ) {
       runPauseButton->setText( "Pause" );
-   else
+   } else {
       runPauseButton->setText( "Start" );
-   
-   if ( World::self()->controller()->haveControl() )
-   {
-      Vector4d propInput = World::self()->simulatedQuad()->propInput();
-      
-      // Update slider values
-      for ( int i = 0; i < 4; ++i )
-      {
-         double p = propInput[i];
-         int v = int(p * m_propInputs[i]->maximum());
-         m_propInputs[i]->setValue( v );
-      }
    }
+   
+   Vector4d propInput = World::self()->simulatedQuad()->propInput();
+      
+  // Update slider values
+  for ( int i = 0; i < 4; ++i )
+  {
+      double p = propInput[i];
+      int v = int(p * m_propInputs[i]->maximum());
+      m_propInputs[i]->setValue( v );
+  }
 }
 
 void Interface::runPauseQuad()
 {
    World::self()->runPause();
-   updateLabels();
+//    updateLabels();
    
-   MatrixXd cov = World::self()->observer()->cov();
-   for ( int i = 0; i < cov.rows(); ++i )
-   {
-      for ( int j = 0; j < cov.cols(); ++j )
-      {
-         if ( abs( cov(i,j) ) < 1e-9 )
-            cov(i,j) = 0;
-      }
-   }
+//    MatrixXd cov = World::self()->observer()->cov();
+//    for ( int i = 0; i < cov.rows(); ++i )
+//    {
+//       for ( int j = 0; j < cov.cols(); ++j )
+//       {
+//          if ( abs( cov(i,j) ) < 1e-9 )
+//             cov(i,j) = 0;
+//       }
+//    }
 //   cout << "Covariance matrix of observed state:" << endl;
 //   cout << "C=[";
 //   for ( int i = 0; i < cov.rows(); ++i )
@@ -224,6 +175,6 @@ void Interface::runPauseQuad()
 void Interface::resetQuad()
 {
    World::self()->reset();
-   propInputsChanged();
-   updateLabels();
+//    propInputsChanged();
+//    updateLabels();
 }

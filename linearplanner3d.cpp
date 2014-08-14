@@ -8,13 +8,13 @@ using namespace std;
 
 shared_ptr<Path> LinearPlanner3d::interceptPath(double T_hint, bool *found) const {
   bool foundMono;
-  LinearPlanner3dPath monoPath = interceptPath(true, &foundMono);
+  LinearPlanner3dPath monoPath = interceptPath(true, T_hint, &foundMono);
   bool foundFull;
-  LinearPlanner3dPath fullPath = interceptPath(false, &foundFull);
+  LinearPlanner3dPath fullPath = interceptPath(false, T_hint, &foundFull);
 
   if (!foundMono || !monoPath.isValid()) {
     // Try to find it again using binary search technique
-    double left = TsControllerTarget();
+    double left = TsWorldTarget();
     double right = 1e4;
     for (int i = 0; i < 20; ++i) {
       double mid = (left + right) / 2;
@@ -34,32 +34,32 @@ shared_ptr<Path> LinearPlanner3d::interceptPath(double T_hint, bool *found) cons
   *found = useMono ? true : foundFull;
   double T = path.duration();
 
-  cout << "usingMono: " << useMono << " T: " << T <<" path.position(T)=" << path.position(T).transpose() << " target: " << target_.eval(T).transpose()
-      << " path.velocity(T)=" << path.velocity(T).transpose() << " target vel: " << target_.derivative().eval(T).transpose() << endl;
+//   cout << "usingMono: " << useMono << " T: " << T <<" path.position(T)=" << path.position(T).transpose() << " target: " << target_.eval(T).transpose()
+//       << " path.velocity(T)=" << path.velocity(T).transpose() << " target vel: " << target_.derivative().eval(T).transpose() << endl;
   return shared_ptr<Path>(new LinearPlanner3dPath(path));
 }
 
-LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, bool* found) const {
+LinearPlanner3dPath LinearPlanner3d::interceptPath(bool useMono, double T_hint, bool* found) const {
   // Do search for correct T
-  double left = 1e-4; // always search for positive time. (can't fly backwards in time!)
-  double right = 10;
-  double valueLeft = f(left, useMono);
-  while ((f(right, useMono) > 0) == (valueLeft > 0) && right < 1e5) {
-    right *= 2;
-  }
-  if (right >= 1e6) {
-    *found = false;
-    return calcInterceptPathAtT(0, useMono);
-  }
+//   double left = 1e-4; // always search for positive time. (can't fly backwards in time!)
+//   double right = 10;
+//   double valueLeft = f(left, useMono);
+//   while ((f(right, useMono) > 0) == (valueLeft > 0) && right < 1e5) {
+//     right *= 2;
+//   }
+//   if (right >= 1e6) {
+//     *found = false;
+//     return calcInterceptPathAtT(0, useMono);
+//   }
 
   auto function = [&] (double x) { return f(x, useMono); };
 
   // TODO passing of eps, iteration parameters
-  double T = binarySearch(function, 0.0001, 100, found);
-  if (T < 0.1) {
-    T = 0.1;
-  }
-//   T = newtonSearch(function, T, found);
+//   double T = binarySearch(function, 0.0001, 100, found);
+//   if (T < 0.1) {
+//     T = 0.1;
+//   }
+  double T = newtonSearch(function, T_hint, found);
   return calcInterceptPathAtT(T, useMono);
 }
 
@@ -148,9 +148,9 @@ double LinearPlanner3dPath::duration() const {
 
 Vector3d LinearPlanner3dPath::initialAccelerationDirection() const {
   // TODO is this a good way of doing it?
-  double t = TsControllerTarget();
+  double t = TsWorldTarget();
 //   return (velocity(t) + 100*Vector3d(0, 0, 0.5*t*t*MaxLinearAcceleration)).normalized();
-  return velocity(7*t).normalized(); // TODO this seems to work well when t = 48 ms, but we may adjust TsControllerTarget, in which case this becomes invalid. So maybe function of MaxPitchAcceleration?
+  return velocity(0.35).normalized(); // TODO this seems to work well when MaxPitchAcceleration = 30, but may fail for other values?
 }
 
 bool LinearPlanner3dPath::isValid(double* penalty) const {
@@ -174,7 +174,7 @@ void TestLinearPlanner3d() {
   LinearPlanner3d planner;
   planner.target_ = Quadratic3d({0, -3, 4}, {0, -7, -2}, {0, 2, 18});
   bool found;
-  LinearPlanner3dPath path = planner.interceptPath(true, &found);
+  LinearPlanner3dPath path = planner.interceptPath(true, 1, &found);
   assert(found);
   assert(path.isValid());
 }

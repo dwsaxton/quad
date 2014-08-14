@@ -14,9 +14,11 @@ double newtonSearch(std::function< double (double)> fn, double x, bool* found) {
   double eps = 1e-8;
   double eps_deriv = 1e-5;
   for (int i = 0; i < maxIt; ++i) {
+//     cout << "Newton i="<<i<<" x="<<x<<endl;
     double value = fn(x);
     if (abs(value) < eps) {
       *found = true;
+//       cout << " Converged with i="<<i<<endl;
       return x;
     }
     double derivative = (fn(x + eps_deriv) - value) / eps_deriv;

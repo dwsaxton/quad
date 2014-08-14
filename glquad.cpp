@@ -158,14 +158,14 @@ void GLQuad::paintGL()
    drawAxes();
    drawIntercept();
    
-   if ( World::self()->environment() == World::Simulation )
-   {
-	  glColor3f(0.5,0.5,0.5);
-	  drawQuad( World::self()->simulatedQuad()->state() );
-   } 
+//    if ( World::self()->environment() == World::Simulation )
+//    {
+// 	  glColor3f(0.5,0.5,0.5);
+// 	  drawQuad( World::self()->simulatedQuad()->state() );
+//    } 
    
    glColor3f(0.8,0.5,0.5);
-   drawQuad( World::self()->observer()->state() );
+   drawQuad( World::self()->simulatedQuad()->state() );
 }
 
 void GLQuad::drawQuad( const QuadState & state )

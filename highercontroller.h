@@ -12,28 +12,25 @@ using namespace Eigen;
 class Controller;
 class LinearPlanner3d;
 class Path;
+class Quad;
 class Quadratic3d;
 class QuadState;
 class SimpleQuadraticIntercept;
 
-class HigherController : public QObject {
-   Q_OBJECT
-   
+class HigherController {
 public:
   HigherController();
-    
-  bool haveControl() const { return have_control_; }
-  void step();
-      
-public Q_SLOTS:
-  void giveControl(bool haveControl);
+
+  /**
+   * Calculate the necessary propeller inputs given the current quad state.
+   */
+  Vector4d getPropInputs(const Quad* quad);
 
 private:
   Quadratic3d stateTargetToQuadratic() const;
   shared_ptr< Path > interceptForTarget(const QuadState& state, LinearPlanner3d* simpleIntercept) const;
 
   Vector3d target_pos_;
-  bool have_control_;
   Controller *controller_;
   double prev_intercept_duration_;
 };

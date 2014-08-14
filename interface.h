@@ -14,12 +14,10 @@ public:
   ~Interface();
   
 private Q_SLOTS:
-  void propInputsChanged();
   void updateLabels();
+  void propInputsChanged();
   void resetQuad();
   void runPauseQuad();
-  void setEnvironmentSimulation();
-  void setEnvironmentActual();
   
 private:
   double propInput( int i ) const;

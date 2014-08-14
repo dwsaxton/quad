@@ -20,7 +20,7 @@ public:
 private:
   double durationCost(LinearPlanner3dPath const& path, bool useMono) const;
   LinearPlanner3dPath calcInterceptPathAtT(double T, bool useMono) const;
-  LinearPlanner3dPath interceptPath(bool useMono, bool* found) const;
+  LinearPlanner3dPath interceptPath(bool useMono, double T_hint, bool* found) const;
 
   friend void TestLinearPlanner3d();
 };

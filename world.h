@@ -7,17 +7,10 @@ using namespace Eigen;
 #include <QObject>
 
 // Number of times per second the quadrocopter is numerically stepped and IMU updated
-const int TsWorldMs = 12;
+const int TsWorldMs = 20;
 inline double TsWorldTarget() { return TsWorldMs*1e-3; }
 
-// "Samping interval" Ts; the period of time each step of the controller corresponds to.
-const int TsControllerMs = 4*TsWorldMs;
-inline double TsControllerTarget() { return TsControllerMs*1e-3; }
-
 const double GRAVITY = 9.8;
-
-const int CONTROLLER_HP = 1;
-const int CONTROLLER_HU = 1;
 
 // TODO should these constants be calculated?
 const double MaxLinearAcceleration = 20;
@@ -26,68 +19,64 @@ const double MaxPitchAcceleration = 30;
 class QTimer;
 
 class HigherController;
+class Interface;
 class Observer;
 class Quad;
 class Sensors;
 
 double unifRand( double min, double max );
 
-class World : public QObject
-{
-   Q_OBJECT
+class World : public QObject {
+  Q_OBJECT
    
 public:
-   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-   
-   World();
-   ~World();
-   
-   static World *self() { return m_self; }
-   
-   HigherController *controller() const { return m_controller; }
-   Observer *observer() const { return m_observer; }
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  World();
+  ~World();
+  
+  static World *self();
+  
+  HigherController *controller() const { return m_controller; }
+  Observer *observer() const { return m_observer; }
    Sensors *sensors() const { return m_sensors; }
    Quad *simulatedQuad() const { return m_simulatedQuad; }
-   Vector3d wind() const { return m_wind; }
-   void setQuadInput( Vector4d u );
+//    Vector3d wind() const { return m_wind; }
+  void setManualQuadInput( Vector4d u );
    
 //    double time() const { return m_stepCount * TsWorld(); }
-   bool isRunning() const { return m_isRunning; }
-   
-   enum Environment { Simulation, Actual };
-   
-   void setEnvironment( Environment e );
-   Environment environment() const { return m_environment; }
+  bool isRunning() const { return m_isRunning; }
    
 public Q_SLOTS:
-   void reset();
-   void runPause();
+  void reset();
+  void runPause();
+  void setAutomaticControl(bool automatic);
    
 private Q_SLOTS:
-   void step();
+  void step();
 //    void stepIfReadings();
    
 private:
-   void updateTimers();
-   static World *m_self;
+  void updateTimers();
+  static World *m_self;
    
-   HigherController *m_controller;
-   Quad *m_simulatedQuad;
-   Observer *m_observer;
-   Sensors *m_sensors;
+  HigherController *m_controller;
+  Quad *m_simulatedQuad;
+  Observer *m_observer;
+  Sensors *m_sensors;
 //    Transceiver *m_transceiver;
    
-   int m_stepCount;
-   QTimer *m_stepTimer;
-   QTimer *m_stepIfReadingsTimer;
+  int m_stepCount;
+  QTimer *m_stepTimer;
+  QTimer *m_stepIfReadingsTimer;
    
-   void stepWind();
-   Vector3d m_wind;
+  void stepWind();
+  Vector3d m_wind;
    
-   Environment m_environment;
-   
-   int m_sensorRequestDelay;
-   bool m_isRunning;
+//    Environment m_environment;
+
+  bool m_isRunning;
+  bool m_haveAutomaticControl;
 };
 
 #endif

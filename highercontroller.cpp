@@ -9,29 +9,19 @@ using namespace std;
 #include "world.h"
 
 HigherController::HigherController() {
-  have_control_ = false;
   controller_ = new Controller();
   target_pos_ = Vector3d(4, 8, 12);
   prev_intercept_duration_ = 1;
 }
 
-void HigherController::giveControl(bool haveControl) {
-  have_control_ = haveControl;
-}
+Vector4d HigherController::getPropInputs(Quad const *quad) {
+  double time_step = TsWorldTarget(); // TODO theoretically, we shouldn't need the time step!!!
+  QuadState state = quad->state();
 
-void HigherController::step() {
-  if (!have_control_) {
-    return;
-  }
-
-  double time_step = TsControllerTarget();
-  QuadState state = World::self()->simulatedQuad()->state();
-
-  // TODO this is massive memory leak
   LinearPlanner3d sqi;
   shared_ptr<Path> intercept = interceptForTarget(state, &sqi);
-  World::self()->simulatedQuad()->path_ = intercept;
-  World::self()->simulatedQuad()->intercept = sqi;
+//   quad->path_ = intercept; // TODO un-comment this
+//   quad->intercept = sqi; // TODO And this as well
 
   // Sanity check
   prev_intercept_duration_ = intercept->duration();
@@ -83,7 +73,7 @@ void HigherController::step() {
     outputs[QuadState::StateIndexVel + j].value = target_vel.coeff(j);
   }
 
-  controller_->step(outputs);
+  return controller_->getPropInputs(quad, outputs);
 }
 
 shared_ptr<Path> HigherController::interceptForTarget(QuadState const& state, LinearPlanner3d *simpleIntercept) const {
@@ -91,7 +81,7 @@ shared_ptr<Path> HigherController::interceptForTarget(QuadState const& state, Li
   intercept.state_ = state;
   intercept.target_ = stateTargetToQuadratic();
   bool found;
-  shared_ptr<Path> path = intercept.interceptPath(prev_intercept_duration_ - TsControllerTarget(), &found, simpleIntercept);
+  shared_ptr<Path> path = intercept.interceptPath(prev_intercept_duration_ - TsWorldTarget(), &found, simpleIntercept);
   if (!found) {
     cout << "Warning: intercept path not found!" << endl;
   }

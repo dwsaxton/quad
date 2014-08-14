@@ -15,12 +15,13 @@ using namespace QP;
 #include <iostream>
 using namespace std;
 
-LinearQuad linearize(const QuadState & initial, const Vector4d & u0, double time_step) {
+LinearQuad linearize(const Quad* original, double time_step) {
+  QuadState initial = original->state();
+  Vector4d u0 = original->propInput();
   VectorXd initial_vector = initial.toVector();
   Quad quad;
   quad.setState(initial);
   quad.setPropInput(u0);
-//   quad.cF *= 0.5;
 
   LinearQuad linear_quad;
 
@@ -57,13 +58,14 @@ Controller::Controller()
    initSSC();
 }
 
-void Controller::step(const QVector< ControlledOutput >& next) {
+Vector4d Controller::getPropInputs(Quad const *quad, const QVector< ControlledOutput >& next) {
   // TODO re-implement having a drift / disturbance
   assert(next.size() == QUAD_STATE_SIZE);
-  m_prev_u = World::self()->simulatedQuad()->propInput();
-  updateSSC(next);
-  VectorXd du = ssc_.calc_du( &m_predX );
-  VectorXd newu = m_prev_u + du;
+  Vector4d current_input = quad->propInput();
+  updateSSC(quad, next);
+  VectorXd predX; // TODO make use of this, or get rid of it
+  VectorXd du = ssc_.calc_du(&predX);
+  VectorXd newu = current_input + du;
 
   for ( int i = 0; i < 4; ++i )
   {
@@ -82,9 +84,7 @@ void Controller::step(const QVector< ControlledOutput >& next) {
       newu[i] = 1;
     }
   }
-  World::self()->setQuadInput( newu );
-
-  m_prev_u = newu;
+  return newu;
 }
 
 void Controller::initSSC() {
@@ -96,11 +96,10 @@ inline double double_min(double x, double y) {
   return x < y ? x : y;
 }
 
-void Controller::updateSSC(QVector<ControlledOutput> const& outputs) {
+void Controller::updateSSC(const Quad* quad, const QVector< ControlledOutput >& outputs) {
   int QSS = QUAD_STATE_SIZE;
 
-  QuadState state = World::self()->observer()->state();
-  LinearQuad linear_quad = linearize(state, m_prev_u, TsControllerTarget());
+  LinearQuad linear_quad = linearize(quad, TsWorldTarget());
 
   ssc_.x0 = linear_quad.xstar;
   ssc_.B = linear_quad.B;
@@ -124,16 +123,17 @@ void Controller::updateSSC(QVector<ControlledOutput> const& outputs) {
 
   // Calculate constraints on propeller input
   double prop_start_time = 0.01; // time it takes for propellers to spin up or down to full speed TODO change this
-  double max_abs_du = TsControllerTarget() / prop_start_time;
+  double max_abs_du = TsWorldTarget() / prop_start_time;
   MatrixXd E(8, 4);
   VectorXd E0(8);
   E.setZero();
   E0.setZero();
+  Vector4d current_input = quad->propInput();
   for (int i = 0; i < 4; ++i) {
     E(2 * i, i) = 1;
     E(2 * i + 1, i) = -1;
-    E0(2 * i) = double_min(max_abs_du, 1 - m_prev_u[i]);
-    E0(2 * i + 1) = double_min(max_abs_du, m_prev_u[i]);
+    E0(2 * i) = double_min(max_abs_du, 1 - current_input[i]);
+    E0(2 * i + 1) = double_min(max_abs_du, current_input[i]);
   }
   ssc_.E = E;
   ssc_.E0 = E0;

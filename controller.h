@@ -15,17 +15,14 @@ namespace QP { class Problem; }
 /**
  * Linearized state of the quadrocopter.
  */
-struct LinearQuad
-{
+struct LinearQuad {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  
   MatrixB B;
   QuadStateVector xstar;
 };
-LinearQuad linearize(const QuadState & initial, const Vector4d & u0, double time_step);
+LinearQuad linearize(Quad const *quad, double time_step);
 
-class ControlledOutput
-{
+class ControlledOutput {
 public:
   ControlledOutput();
   double value;
@@ -39,20 +36,11 @@ public:
 
   Controller();
 
-  void step(QVector<ControlledOutput> const& next);
+  Vector4d getPropInputs(Quad const *quad, QVector<ControlledOutput> const& next);
   
 private:
   void initSSC();
-  void updateSSC(QVector<ControlledOutput> const& next);
-
-  VectorXd m_predX;
-  
-  // Previous disturbance
-  VectorXd m_pred_d;
-  
-  // Previously applied input
-  Vector4d m_prev_u;
-  
+  void updateSSC(Quad const *quad, const QVector< ControlledOutput >& outputs);
   SSC ssc_;
 };
 
