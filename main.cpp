@@ -1,5 +1,6 @@
 #include <QApplication>
 
+#include "globals.h"
 #include "interface.h"
 #include "linearplanner3d.h"
 #include "onlinelearner.h"
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
   TestOnlineLearner();
 
   QApplication app(argc, argv);
+  Globals::self();
   Interface interface;
   interface.show();
   return app.exec();

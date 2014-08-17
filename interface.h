@@ -18,6 +18,7 @@ private Q_SLOTS:
   void propInputsChanged();
   void resetQuad();
   void runPauseQuad();
+  void setControlAutomatic(bool automatic);
   
 private:
   double propInput( int i ) const;

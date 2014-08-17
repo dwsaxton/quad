@@ -24,7 +24,7 @@ public:
   /**
    * Calculate the necessary propeller inputs given the current quad state.
    */
-  Vector4d getPropInputs(const Quad* quad);
+  Vector4d getPropInputs(QuadState const& state, Vector4d const& last_inputs);
 
 private:
   Quadratic3d stateTargetToQuadratic() const;

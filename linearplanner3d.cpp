@@ -4,7 +4,7 @@
 using namespace std;
 
 #include "linearplannermono.h"
-#include "world.h"
+#include "controllooper.h"
 
 shared_ptr<Path> LinearPlanner3d::interceptPath(double T_hint, bool *found) const {
   bool foundMono;

@@ -4,9 +4,9 @@
 using namespace std;
 
 #include "controller.h"
+#include "controllooper.h"
 #include "quadraticintercept.h"
 #include "rotationplanner.h"
-#include "world.h"
 
 HigherController::HigherController() {
   controller_ = new Controller();
@@ -14,20 +14,15 @@ HigherController::HigherController() {
   prev_intercept_duration_ = 1;
 }
 
-Vector4d HigherController::getPropInputs(Quad const *quad) {
+Vector4d HigherController::getPropInputs(const QuadState& state, const Vector4d& last_inputs) {
   double time_step = TsWorldTarget(); // TODO theoretically, we shouldn't need the time step!!!
-  QuadState state = quad->state();
 
   LinearPlanner3d sqi;
   shared_ptr<Path> intercept = interceptForTarget(state, &sqi);
 //   quad->path_ = intercept; // TODO un-comment this
 //   quad->intercept = sqi; // TODO And this as well
 
-  // Sanity check
   prev_intercept_duration_ = intercept->duration();
-//   cout << "Intercept duration: " << prev_intercept_duration_ << endl;
-//   cout << "Pos at intercept: " << intercept->position(prev_intercept_duration_).transpose() << endl;
-//   cout << "Vel at intercept: " << intercept->velocity(prev_intercept_duration_).transpose() << endl;
 
   Vector3d target_pos = intercept->position(time_step);
   Vector3d target_vel = intercept->velocity(time_step);
@@ -36,12 +31,6 @@ Vector4d HigherController::getPropInputs(Quad const *quad) {
   // the required trajectory
   Vector3d current_z = state.orient.conjugate() * Vector3d(0, 0, 1);
   Vector3d target_z = intercept->initialAccelerationDirection();
-//   cout << "current_z: " <<current_z.transpose()<<endl;
-//   cout << "target_z:  " <<target_z.transpose()<<endl;
-//   cout << "current pos: " << state.pos.transpose() << endl;
-//   cout << "target pos:  " << target_pos.transpose() << endl;
-//   cout << "current vel: " << state.vel.transpose() << endl;
-//   cout << "target vel:  " << target_vel.transpose() << endl;
 
   QVector<ControlledOutput> outputs(QUAD_STATE_SIZE);
 
@@ -73,7 +62,7 @@ Vector4d HigherController::getPropInputs(Quad const *quad) {
     outputs[QuadState::StateIndexVel + j].value = target_vel.coeff(j);
   }
 
-  return controller_->getPropInputs(quad, outputs);
+  return controller_->getPropInputs(state, last_inputs, outputs);
 }
 
 shared_ptr<Path> HigherController::interceptForTarget(QuadState const& state, LinearPlanner3d *simpleIntercept) const {

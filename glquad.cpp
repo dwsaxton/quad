@@ -1,9 +1,11 @@
 #include "glquad.h"
 
+#include "controllooper.h"
+#include "globals.h"
 #include "observer.h"
 #include "path.h"
 #include "quad.h"
-#include "world.h"
+#include "imu.h"
 
 #include <QtGui>
 #include <QtOpenGL>
@@ -120,7 +122,7 @@ void GLQuad::drawAxes()
 }
 
 void GLQuad::drawIntercept() {
-  shared_ptr<Path> intercept = World::self()->simulatedQuad()->path_;
+  shared_ptr<Path> intercept = Globals::self().simulatedQuad()->path_;
   if (intercept == nullptr) {
     return;
   }
@@ -152,20 +154,17 @@ void GLQuad::drawIntercept() {
 
 void GLQuad::paintGL()
 {
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    
-   setupView();
-   drawAxes();
-   drawIntercept();
-   
-//    if ( World::self()->environment() == World::Simulation )
-//    {
-// 	  glColor3f(0.5,0.5,0.5);
-// 	  drawQuad( World::self()->simulatedQuad()->state() );
-//    } 
-   
-   glColor3f(0.8,0.5,0.5);
-   drawQuad( World::self()->simulatedQuad()->state() );
+  setupView();
+  drawAxes();
+  drawIntercept();
+  
+  glColor3f(0.5,0.5,0.5);
+  drawQuad(Globals::self().imu()->stateForTime(Globals::self().currentTime_us()));
+
+  glColor3f(0.8,0.5,0.5);
+  drawQuad(Globals::self().simulatedQuad()->state());
 }
 
 void GLQuad::drawQuad( const QuadState & state )
@@ -201,7 +200,7 @@ void GLQuad::drawQuad( const QuadState & state )
    drawCube(-0.5*scale,0.5*scale,-3*scale,-1*scale,-0.5*scale,0.5*scale);
    drawCube(-0.5*scale,0.5*scale,1*scale,3*scale,-0.5*scale,0.5*scale);
    
-   Vector4d o = World::self()->simulatedQuad()->propInput();
+   Vector4d o = Globals::self().simulatedQuad()->propInput();
    double s = 4 *scale;
    
    glTranslated( 2.5*scale, 0, 0 );

@@ -1,22 +1,23 @@
 #include "quad.h"
 
-#include "world.h"
-
 #include <cmath>
 #include <QTime>
+
+#include "controllooper.h"
+#include "globals.h"
 
 //BEGIN class QuadModel
 QuadModel::QuadModel()
 {
    // Default values
-   M = 2;
+   M = 1;
    I1 = 0.01;
    I2 = 0.01;
    I3 = 0.01;
    IP = 0.0002;
    c = Vector3d( 0, 0, -0.05 );
-   d = 0.2;
-   cF[0] = cF[1] = cF[2] = cF[3] = 0.001;
+   d = 0.18;
+   cF[0] = cF[1] = cF[2] = cF[3] = 10;
    cT = 0.05;
 }
 
@@ -32,7 +33,7 @@ double QuadModel::torqueFromProp(int prop, double propInput) const
 }
 double QuadModel::propOmega( double propInput ) const
 {
-   return 100*sqrt(propInput);
+   return sqrt(propInput);
 }
 
 void QuadModel::calcDeriv( QuadState *deriv, const QuadState & state, const Vector4d & propInput, const Vector3d & windForce ) const

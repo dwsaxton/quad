@@ -1,8 +1,9 @@
 #include "observer.h"
 
+#include "controllooper.h"
+#include "globals.h"
 #include "quad.h"
 #include "sensors.h"
-#include "world.h"
 
 #include <iostream>
 using namespace std;
@@ -112,54 +113,54 @@ void Observer::step()
    
 //    m_xhat.pos.setZero();
 //    m_xhat.orient.normalize();
-   m_xhat = World::self()->simulatedQuad()->state();
+   m_xhat = Globals::self().simulatedQuad()->state();
 }
 
 const double kappa = 2;
 
-void Observer::stepSensors()
-{
-//    cout << "################" << endl;
-//    cout << "Before doing random walk, old covariance matrix is" << endl << m_P << endl;
-   
-   VectorXd scale(L);
-   for ( int i = 0; i < L; ++i )
-	  scale(i) = 1;
-   VectorXd add(L);
-   add.setZero();
-   
-   Vector3d bias_scale, bias_add;
-   
-   Sensors *s = World::self()->sensors();
-   
-   double tsWorld = TsWorldTarget();
-   
-   m_a = s->readAccelerometer( tsWorld, &bias_scale, &bias_add );
-   scale.segment( QUAD_STATE_SIZE, 3 ) = bias_scale;
-   add.segment( QUAD_STATE_SIZE, 3 ) = bias_add;
-   
-   m_g = s->readGyroscope( tsWorld, &bias_scale, &bias_add );
-   scale.segment( QUAD_STATE_SIZE+3, 3 ) = bias_scale;
-   add.segment( QUAD_STATE_SIZE+3, 3 ) = bias_add;
-   
-   m_gps = s->readGPS( tsWorld, &bias_scale, &bias_add );
-   scale.segment( QUAD_STATE_SIZE+6, 3 ) = bias_scale;
-   add.segment( QUAD_STATE_SIZE+6, 3 ) = bias_add;
-   
-   for ( int i = 0; i < L; ++i )
-   {
-	  for ( int j = 0; j < L; ++j )
-	  {
-		 m_P(i,j) *= scale(i);
-		 m_P(i,j) *= scale(j);
-	  }
-   }
-   
-   for ( int i = 0; i < L; ++i )
-	  m_P(i,i) += add(i);
-   
-//    cout << "After doing random walk, new covariance matrix is" << endl << m_P << endl;
-}
+// void Observer::stepSensors()
+// {
+// //    cout << "################" << endl;
+// //    cout << "Before doing random walk, old covariance matrix is" << endl << m_P << endl;
+//    
+//    VectorXd scale(L);
+//    for ( int i = 0; i < L; ++i )
+// 	  scale(i) = 1;
+//    VectorXd add(L);
+//    add.setZero();
+//    
+//    Vector3d bias_scale, bias_add;
+//    
+//    Sensors *s = Globals::self().controlLooper()->sensors();
+//    
+//    double tsWorld = TsWorldTarget();
+//    
+//    m_a = s->readAccelerometer( tsWorld, &bias_scale, &bias_add );
+//    scale.segment( QUAD_STATE_SIZE, 3 ) = bias_scale;
+//    add.segment( QUAD_STATE_SIZE, 3 ) = bias_add;
+//    
+//    m_g = s->readGyroscope( tsWorld, &bias_scale, &bias_add );
+//    scale.segment( QUAD_STATE_SIZE+3, 3 ) = bias_scale;
+//    add.segment( QUAD_STATE_SIZE+3, 3 ) = bias_add;
+//    
+//    m_gps = s->readGPS( tsWorld, &bias_scale, &bias_add );
+//    scale.segment( QUAD_STATE_SIZE+6, 3 ) = bias_scale;
+//    add.segment( QUAD_STATE_SIZE+6, 3 ) = bias_add;
+//    
+//    for ( int i = 0; i < L; ++i )
+//    {
+// 	  for ( int j = 0; j < L; ++j )
+// 	  {
+// 		 m_P(i,j) *= scale(i);
+// 		 m_P(i,j) *= scale(j);
+// 	  }
+//    }
+//    
+//    for ( int i = 0; i < L; ++i )
+// 	  m_P(i,i) += add(i);
+//    
+// //    cout << "After doing random walk, new covariance matrix is" << endl << m_P << endl;
+// }
 
 void Observer::predict()
 {

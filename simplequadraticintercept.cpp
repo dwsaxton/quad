@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-#include "world.h"
+#include "controllooper.h"
 
 double PathInfo::accelDurationAtTime(double t) const {
   return max(0.0, min(t - rotation_duration, accel_duration));

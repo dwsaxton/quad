@@ -68,7 +68,7 @@ public:
    MatrixOS cov() const { return m_P; }
    
 private:
-   void stepSensors();
+//    void stepSensors();
    void predict();
    void update();
    

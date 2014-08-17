@@ -1,11 +1,17 @@
 #include "sensors.h"
 
+#include "globals.h"
 #include "quad.h"
-#include "world.h"
 
 #include <cmath>
 #include <iostream>
 using namespace std;
+
+double unifRand( double min, double max ) {
+   double x = double(rand()) / RAND_MAX;
+   return min + x*(max-min);
+}
+
 
 /**
  * Returns a value distributed as N(0,1)
@@ -117,7 +123,7 @@ Vector3d stepWalk( double step, CRandomWalk *w, Vector3d x, Vector3d *bias_scale
 
 Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d *bias_add )
 {
-   Quad *q = World::self()->simulatedQuad();
+   Quad *q = Globals::self().simulatedQuad();
    Vector3d a = q->info().force / q->M;
    a += GRAVITY * q->state().rotateSpaceToBody( ez );
    Vector3d x = stepWalk( step, m_ba, a, bias_scale, bias_add );
@@ -130,7 +136,7 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
 
 Vector3d Sensors::readGyroscope( double step, Vector3d *bias_scale, Vector3d *bias_add )
 {
-   Quad *q = World::self()->simulatedQuad();
+   Quad *q = Globals::self().simulatedQuad();
    Vector3d g = q->state().omega;
    Vector3d x = stepWalk( step, m_bg, g, bias_scale, bias_add );
    
@@ -142,7 +148,7 @@ Vector3d Sensors::readGyroscope( double step, Vector3d *bias_scale, Vector3d *bi
 
 Vector3d Sensors::readGPS( double step, Vector3d *bias_scale, Vector3d *bias_add )
 {
-   Quad *q = World::self()->simulatedQuad();
+   Quad *q = Globals::self().simulatedQuad();
    Vector3d gps = q->state().pos;
    Vector3d x = stepWalk( step, m_bgps, gps, bias_scale, bias_add );
    

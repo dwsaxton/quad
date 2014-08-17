@@ -3,9 +3,9 @@
 #include <iostream>
 using namespace std;
 
+#include "globals.h"
 #include "linearplanner3d.h"
 #include "simplequadraticintercept.h"
-#include "world.h"
 
 QuadraticIntercept::QuadraticIntercept() {
 }

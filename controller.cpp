@@ -1,7 +1,7 @@
 #include "controller.h"
 
+#include "controllooper.h"
 #include "observer.h"
-#include "world.h"
 
 #include <QVector>
 
@@ -15,9 +15,7 @@ using namespace QP;
 #include <iostream>
 using namespace std;
 
-LinearQuad linearize(const Quad* original, double time_step) {
-  QuadState initial = original->state();
-  Vector4d u0 = original->propInput();
+LinearQuad linearize(QuadState const& initial, const Vector4d& u0, double time_step) {
   VectorXd initial_vector = initial.toVector();
   Quad quad;
   quad.setState(initial);
@@ -58,11 +56,10 @@ Controller::Controller()
    initSSC();
 }
 
-Vector4d Controller::getPropInputs(Quad const *quad, const QVector< ControlledOutput >& next) {
+Vector4d Controller::getPropInputs(const QuadState& state, const Vector4d& current_input, const QVector< ControlledOutput >& next) {
   // TODO re-implement having a drift / disturbance
   assert(next.size() == QUAD_STATE_SIZE);
-  Vector4d current_input = quad->propInput();
-  updateSSC(quad, next);
+  updateSSC(state, current_input, next);
   VectorXd predX; // TODO make use of this, or get rid of it
   VectorXd du = ssc_.calc_du(&predX);
   VectorXd newu = current_input + du;
@@ -96,10 +93,10 @@ inline double double_min(double x, double y) {
   return x < y ? x : y;
 }
 
-void Controller::updateSSC(const Quad* quad, const QVector< ControlledOutput >& outputs) {
+void Controller::updateSSC(QuadState const& state, const Vector4d& current_input, const QVector< ControlledOutput >& outputs) {
   int QSS = QUAD_STATE_SIZE;
 
-  LinearQuad linear_quad = linearize(quad, TsWorldTarget());
+  LinearQuad linear_quad = linearize(state, current_input, TsWorldTarget());
 
   ssc_.x0 = linear_quad.xstar;
   ssc_.B = linear_quad.B;
@@ -128,7 +125,6 @@ void Controller::updateSSC(const Quad* quad, const QVector< ControlledOutput >& 
   VectorXd E0(8);
   E.setZero();
   E0.setZero();
-  Vector4d current_input = quad->propInput();
   for (int i = 0; i < 4; ++i) {
     E(2 * i, i) = 1;
     E(2 * i + 1, i) = -1;

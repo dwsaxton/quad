@@ -1,11 +1,14 @@
 #include <QtGui>
 
+#include "controllooper.h"
+#include "globals.h"
 #include "highercontroller.h"
+#include "imu.h"
 #include "interface.h"
 #include "observer.h"
+#include "propellers.h"
 #include "quad.h"
 #include "sensors.h"
-#include "world.h"
 
 #include <cmath>
 #include <iomanip>
@@ -14,8 +17,6 @@ using namespace std;
 
 Interface::Interface()
 {
-  new World;
-  
   setupUi(this);
   
   m_propInputs[0] = prop1;
@@ -29,7 +30,7 @@ Interface::Interface()
   
   connect( runPauseButton, SIGNAL(clicked()), this, SLOT(runPauseQuad()) );
   connect( resetButton, SIGNAL(clicked()), this, SLOT(resetQuad()) );
-  connect(controlAutomatic, SIGNAL(toggled(bool)), World::self(), SLOT(setAutomaticControl(bool)));
+  connect(controlAutomatic, SIGNAL(toggled(bool)), this, SLOT(setControlAutomatic(bool)));
 
   QTimer *timer = new QTimer(this);
   connect( timer, SIGNAL(timeout()), this, SLOT(updateLabels()) );
@@ -43,7 +44,7 @@ Interface::Interface()
 
 Interface::~Interface()
 {
-   delete World::self();
+   delete Globals::self().controlLooper();
 }
 
 double Interface::propInput( int i ) const
@@ -53,9 +54,10 @@ double Interface::propInput( int i ) const
 
 void Interface::propInputsChanged()
 {
-   for ( int i = 0; i < 4; ++i ) {
-      World::self()->simulatedQuad()->setPropInput( i, propInput(i) );
-   }
+  Propellers *p = Globals::self().propellers();
+  for ( int i = 0; i < 4; ++i ) {
+    p->setInput(i, propInput(i));
+  }
 }
 
 
@@ -86,7 +88,7 @@ VectorXd qCoeffs_wxyz( const Quaterniond & q )
 
 void Interface::updateLabels()
 {
-   Quad *quad = World::self()->simulatedQuad();
+   Quad *quad = Globals::self().simulatedQuad();
    
   QuadState state = quad->state();
 
@@ -96,10 +98,10 @@ void Interface::updateLabels()
 //   orientationLabel->setText( toCoords( qCoeffs_wxyz(state.orient) ) );
 //   windLabel->setText( toCoords( World::self()->wind() ) );
    
-   Observer *o = World::self()->observer();
-   QuadState pred = o->state();
+//    Observer *o = Globals::self().controlLooper()->observer();
+//    QuadState pred = o->state();
    
-   ArrayXd sd = o->cov().diagonal().array();
+//    ArrayXd sd = o->cov().diagonal().array();
    
 //    predPositionLabel->setText( toCoords( pred.pos ) + "\n+-" + toCoords(sd.segment(0,3).sqrt()) );
 //    predVelocityLabel->setText( toCoords( pred.vel ) + "\n+-" + toCoords(sd.segment(3,3).sqrt()) );
@@ -110,37 +112,42 @@ void Interface::updateLabels()
 //    timeLabel->setText( fixed( World::self()->time() ) );
 //    OmegaLabel->setText( toCoords( 100*World::self()->simulatedQuad()->propInput(), 1 ) );
    
-   Sensors *s = World::self()->sensors();
+//    Sensors *s = Globals::self().controlLooper()->sensors();
+
+  Vector3d accel = Globals::self().imu()->lastAcceleration();
+  Vector3d gyro = Globals::self().imu()->lastAngularAcceleration();
    
-   accelerometersLabel->setText( toCoords( s->readAccelerometer() ) + "\n+-" + toCoords(s->var_ba().array().sqrt(),4) );
-   gyroLabel->setText( toCoords( s->readGyroscope(), 3 ) + "\n+-" + toCoords(s->var_bg().array().sqrt(),4) );
-   gpsLabel->setText( toCoords( s->readGPS() ) + "\n+-" + toCoords(s->var_bgps().array().sqrt(),1) );
+//   accelerometersLabel->setText(toCoords(accel) + "\n+-" + toCoords(s->var_ba().array().sqrt(),4) );
+//   gyroLabel->setText( toCoords(gyro, 3) + "\n+-" + toCoords(s->var_bg().array().sqrt(),4) );
+  accelerometersLabel->setText(toCoords(accel));
+  gyroLabel->setText(toCoords(gyro, 3));
+//    gpsLabel->setText( toCoords( s->readGPS() ) + "\n+-" + toCoords(s->var_bgps().array().sqrt(),1) );
    
    // Update plot 
 //    double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
 //    interceptPlot->setIntercept(quad->intercept, duration);
    
    
-   if ( World::self()->isRunning() ) {
-      runPauseButton->setText( "Pause" );
-   } else {
-      runPauseButton->setText( "Start" );
-   }
+  if ( Globals::self().controlLooper()->isRunning() ) {
+    runPauseButton->setText( "Pause" );
+  } else {
+    runPauseButton->setText( "Start" );
+  }
    
-   Vector4d propInput = World::self()->simulatedQuad()->propInput();
+  Vector4d propInput = Globals::self().propellers()->input();
       
   // Update slider values
-  for ( int i = 0; i < 4; ++i )
-  {
-      double p = propInput[i];
-      int v = int(p * m_propInputs[i]->maximum());
-      m_propInputs[i]->setValue( v );
+  for ( int i = 0; i < 4; ++i ) {
+    double p = propInput[i];
+    int v = int(p * m_propInputs[i]->maximum());
+    m_propInputs[i]->setValue( v );
   }
 }
 
 void Interface::runPauseQuad()
 {
-   World::self()->runPause();
+  ControlLooper *controller = Globals::self().controlLooper();
+  controller->setRunning(!controller->isRunning());
 //    updateLabels();
    
 //    MatrixXd cov = World::self()->observer()->cov();
@@ -174,7 +181,11 @@ void Interface::runPauseQuad()
 
 void Interface::resetQuad()
 {
-   World::self()->reset();
+  Globals::self().reset();
 //    propInputsChanged();
 //    updateLabels();
+}
+
+void Interface::setControlAutomatic(bool automatic) {
+  Globals::self().controlLooper()->setRunning(automatic);
 }

@@ -5,8 +5,6 @@
 #include "quadstate.h"
 #include "simplequadraticintercept.h"
 
-const Vector3d ez( 0, 0, 1 ); // Vector pointing downwards
-
 class Path;
 
 class QuadInfo
@@ -36,7 +34,7 @@ public:
   double I1, I2, I3; // inertia of body
   double IP; // inertia of propeller
   Vector3d c; // offset of center of mass
-  double d;
+  double d; // distance of propellers from center
   double cF[4];
   double cT;
 

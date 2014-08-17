@@ -36,11 +36,11 @@ public:
 
   Controller();
 
-  Vector4d getPropInputs(Quad const *quad, QVector<ControlledOutput> const& next);
+  Vector4d getPropInputs(QuadState const& state, const Vector4d& last_inputs, QVector<ControlledOutput> const& next);
   
 private:
   void initSSC();
-  void updateSSC(Quad const *quad, const QVector< ControlledOutput >& outputs);
+  void updateSSC(QuadState const& state, const Vector4d& last_inputs, const QVector< ControlledOutput >& outputs);
   SSC ssc_;
 };
 
