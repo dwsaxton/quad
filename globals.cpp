@@ -13,6 +13,7 @@ Globals &Globals::self() {
 }
 
 Globals::Globals() {
+  simulated_quad_running_ = false;
   control_looper_ = new ControlLooper();
   imu_ = new Imu();
   propellers_ = new Propellers();
@@ -59,7 +60,9 @@ void Globals::runSimulatedQuad() {
   const int64_t refresh_us = TsWorldMs * 1000 / 10;
   while (true) {
     iteration++;
-    simulated_quad_->step(refresh_us * 1e-6);
+    if (simulated_quad_running_) {
+      simulated_quad_->step(refresh_us * 1e-6);
+    }
     Globals::self().sleepUntil_us(start_time + iteration * refresh_us);
   }
 }

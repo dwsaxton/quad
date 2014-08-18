@@ -23,6 +23,8 @@ private Q_SLOTS:
 private:
   double propInput( int i ) const;
   QSlider *m_propInputs[4];
+  bool is_running_;
+  bool control_automatic_;
 };
 
 #endif

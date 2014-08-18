@@ -17,6 +17,8 @@ using namespace std;
 
 Interface::Interface()
 {
+  is_running_ = false;
+  control_automatic_ = true;
   setupUi(this);
   
   m_propInputs[0] = prop1;
@@ -28,8 +30,8 @@ Interface::Interface()
     connect( m_propInputs[i], SIGNAL(valueChanged(int)), this, SLOT(propInputsChanged()) );
   }
   
-  connect( runPauseButton, SIGNAL(clicked()), this, SLOT(runPauseQuad()) );
-  connect( resetButton, SIGNAL(clicked()), this, SLOT(resetQuad()) );
+  connect(runPauseButton, SIGNAL(clicked()), this, SLOT(runPauseQuad()));
+  connect(resetButton, SIGNAL(clicked()), this, SLOT(resetQuad()));
   connect(controlAutomatic, SIGNAL(toggled(bool)), this, SLOT(setControlAutomatic(bool)));
 
   QTimer *timer = new QTimer(this);
@@ -126,13 +128,8 @@ void Interface::updateLabels()
    // Update plot 
 //    double duration = quad->path_ != nullptr ? quad->path_->duration() : 0;
 //    interceptPlot->setIntercept(quad->intercept, duration);
-   
-   
-  if ( Globals::self().controlLooper()->isRunning() ) {
-    runPauseButton->setText( "Pause" );
-  } else {
-    runPauseButton->setText( "Start" );
-  }
+
+  runPauseButton->setText(is_running_ ? "Pause" : "Start");
    
   Vector4d propInput = Globals::self().propellers()->input();
       
@@ -146,8 +143,9 @@ void Interface::updateLabels()
 
 void Interface::runPauseQuad()
 {
-  ControlLooper *controller = Globals::self().controlLooper();
-  controller->setRunning(!controller->isRunning());
+  is_running_ = !is_running_;
+  Globals::self().controlLooper()->setRunning(control_automatic_ && is_running_);
+  Globals::self().setSimulatedQuadRunning(is_running_);
 //    updateLabels();
    
 //    MatrixXd cov = World::self()->observer()->cov();
@@ -187,5 +185,6 @@ void Interface::resetQuad()
 }
 
 void Interface::setControlAutomatic(bool automatic) {
-  Globals::self().controlLooper()->setRunning(automatic);
+  control_automatic_ = automatic;
+  Globals::self().controlLooper()->setRunning(control_automatic_ && is_running_);
 }

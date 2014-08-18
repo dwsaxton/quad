@@ -23,6 +23,7 @@ public:
   Imu *imu() const { return imu_; }
   Propellers *propellers() const { return propellers_; }
   Quad *simulatedQuad() const { return simulated_quad_; }
+  void setSimulatedQuadRunning(bool run) { simulated_quad_running_ = run; }
 
   /**
    * Return a monotonically increasing time from some arbitrary point, in
@@ -54,6 +55,7 @@ private:
   Quad *simulated_quad_;
 
   time_t initial_seconds_;
+  bool simulated_quad_running_;
 };
 
 #endif // GLOBALS_H
