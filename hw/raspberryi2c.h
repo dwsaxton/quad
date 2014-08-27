@@ -7,9 +7,10 @@ class RaspberryI2c : public I2c {
 public:
   RaspberryI2c();
 
-  bool startChat(uchar addr);
-  bool read(char *buffer, int byte_count);
-  bool write(char *buffer, int byte_count);
+  bool startChat(__u8 addr);
+  bool read_reg(__u8 reg, __u8 *result);
+  bool read_reg_2(__u8 reg, __u16 *result);
+  bool write_reg(__u8 reg, __u8 value);
 
 private:
   int file_;

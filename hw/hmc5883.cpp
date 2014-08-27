@@ -1,18 +1,21 @@
 #include "hmc5883.h"
 
-const uchar COMPASS_ADDR = 0x1e;
+#include "i2c.h"
 
-const uchar REG_CRA = 0x00; // configuration register A
-const uchar REG_CRB = 0x01; // configuration register B
-const uchar REG_MODE = 0x02;
-const uchar REG_DATAXM = 0x03; // data output X most significant byte
+const __u8 COMPASS_ADDR = 0x1e;
+
+const __u8 REG_CRA = 0x00; // configuration register A
+const __u8 REG_CRB = 0x01; // configuration register B
+const __u8 REG_MODE = 0x02;
+const __u8 REG_DATAXM = 0x03; // data output X most significant byte
 // ...
-const uchar REG_STATUS = 0x09; // status register
+const __u8 REG_STATUS = 0x09; // status register
 
 Hmc5883::Hmc5883(I2c *i2c) {
   i2c_ = i2c;
+  i2c_->startChat(COMPASS_ADDR);
 
-  uchar cra = 0;
+  __u8 cra = 0;
   
   // minimum data output rate (Hz)
   // 0  0.75
@@ -26,37 +29,18 @@ Hmc5883::Hmc5883(I2c *i2c) {
   
   // 75 Hz
   cra |= 6 << 2;
-  writeReg( REG_CRA, cra );
+  i2c_->write_reg(REG_CRA, cra);
   
   // don't change CRB; thus gain is default value of +1.0 Ga, 1300 counts / milli-gauss
   
-  
   // set mode to "continuous-conversion" mode (from default of sleep mode)
-  writeReg( REG_MODE, 0x00 );
+  i2c_->write_reg(REG_MODE, 0x00);
 }
 
-void Hmc5883::writeReg( uchar reg, uchar data )
+void Hmc5883::readSensorReg( __u16 *x, __u16 *y, __u16 *z )
 {
-   i2c_start( COMPASS_ADDR, I2C_WRITE );
-   i2c_write( reg );
-   i2c_write( data );
-   i2c_stop();
-}
-
-void Hmc5883::readSensorReg( int16_t *x, int16_t *y, int16_t *z )
-{
-   i2c_start( COMPASS_ADDR, I2C_WRITE );
-   i2c_write( REG_DATAXM );
-   i2c_start( COMPASS_ADDR, I2C_READ );
-   uchar c[6];
-   for ( int i = 0; i < 6; ++i )
-   {
-      uchar type = (i == 5) ? I2C_READ_NACK : I2C_READ_ACK;
-      i2c_read( &c[i], type );
-   }
-   i2c_stop();
-
-   *x = (c[0] << 8) | c[1];
-   *y = (c[2] << 8) | c[3];
-   *z = (c[4] << 8) | c[5];
+  i2c_->startChat(COMPASS_ADDR);
+  i2c_->read_reg_2(REG_DATAXM + 0, x);
+  i2c_->read_reg_2(REG_DATAXM + 2, y);
+  i2c_->read_reg_2(REG_DATAXM + 4, z);
 }

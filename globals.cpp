@@ -6,6 +6,7 @@
 #include "imu.h"
 #include "propellers.h"
 #include "quad.h"
+#include "hw/raspberryi2c.h"
 
 Globals &Globals::self() {
   static Globals instance;
