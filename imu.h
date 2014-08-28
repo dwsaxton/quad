@@ -9,7 +9,7 @@ class QuadState;
 
 class Imu {
 public:
-  Imu();
+  Imu(int environment);
   ~Imu();
 
   /**

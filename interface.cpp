@@ -8,7 +8,6 @@
 #include "observer.h"
 #include "propellers.h"
 #include "quad.h"
-#include "sensors.h"
 
 #include <cmath>
 #include <iomanip>

@@ -1,5 +1,8 @@
 #include "itg3200.h"
 
+#include <cmath>
+#include <cstdint>
+
 #include "i2c.h"
 
 const __u8 GYRO_ADDR = 0x68;
@@ -72,3 +75,13 @@ void Itg3200::readSensorReg( __u16 *x, __u16 *y, __u16 *z ) {
   i2c_->read_reg_2(REG_GYRO_XOUT_H + 2, z);
   i2c_->read_reg_2(REG_GYRO_XOUT_H + 4, x);
 }
+
+void Itg3200::read( float *x, float *y, float *z ) {
+  __u16 x_, y_, z_;
+  readSensorReg(&x_, &y_, &z_);
+  float scale = (M_PI / 180.0) * (1.0 / 14.375); // as per the datasheet
+  *x = scale * *reinterpret_cast<int16_t*>(&x_);
+  *y = scale * *reinterpret_cast<int16_t*>(&y_);
+  *z = scale * *reinterpret_cast<int16_t*>(&z_);
+}
+

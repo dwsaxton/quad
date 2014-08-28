@@ -2,8 +2,8 @@
 
 #include "memsimu.h"
 
-Imu::Imu() {
-  mems_imu_ = new MemsImu();
+Imu::Imu(int environment) {
+  mems_imu_ = new MemsImu(environment);
 }
 
 Imu::~Imu() {

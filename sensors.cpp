@@ -1,5 +1,7 @@
 #include "sensors.h"
 
+#include "hw/adxl345.h"
+#include "hw/itg3200.h"
 #include "globals.h"
 #include "quad.h"
 
@@ -81,16 +83,25 @@ double CRandomWalk::step( double period, double *bias_scale, double *bias_add )
 
 
 //BEGIN class Sensors
-Sensors::Sensors()
+Sensors::Sensors(int environment)
 {
-   for ( int i = 0; i < 3; ++i )
-   {
-	  m_ba[i] = CRandomWalk( 0.2, 0.9 );
-      m_bg[i] = CRandomWalk( 0.0015, 0.9 );
-	  m_bgps[i] = CRandomWalk( 100, 0.4 );
-   }
+  for ( int i = 0; i < 3; ++i )
+  {
+    m_ba[i] = CRandomWalk( 0.2, 0.9 );
+    m_bg[i] = CRandomWalk( 0.0015, 0.9 );
+    m_bgps[i] = CRandomWalk( 100, 0.4 );
+  }
    
-   reset();
+  reset();
+
+  if (environment == Globals::OnBoard) {
+    I2c *i2c = Globals::self().i2c();
+    accelerometer_ = new Adxl345(i2c);
+    gyroscope_ = new Itg3200(i2c);
+  } else {
+    accelerometer_ = nullptr;
+    gyroscope_ = nullptr;
+  }
 }
 
 void Sensors::reset()
@@ -123,10 +134,16 @@ Vector3d stepWalk( double step, CRandomWalk *w, Vector3d x, Vector3d *bias_scale
 
 Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d *bias_add )
 {
-   Quad *q = Globals::self().simulatedQuad();
-   Vector3d a = q->info().force / q->M;
-   a += GRAVITY * q->state().rotateSpaceToBody( ez );
-   Vector3d x = stepWalk( step, m_ba, a, bias_scale, bias_add );
+  if (accelerometer_ != nullptr) {
+    float x, y, z;
+    accelerometer_->readAccel(&x, &y, &z);
+    return Vector3d(x, y, z);
+  }
+
+  Quad *q = Globals::self().simulatedQuad();
+  Vector3d a = q->info().force / q->M;
+  a += GRAVITY * q->state().rotateSpaceToBody( ez );
+  Vector3d x = stepWalk( step, m_ba, a, bias_scale, bias_add );
    
 //    if ( World::self()->environment() == World::Simulation )
 	  return x;

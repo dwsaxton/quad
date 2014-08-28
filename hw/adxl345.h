@@ -43,11 +43,14 @@ public:
   __u8 readReg( __u8 reg );
   void writeReg( __u8 reg, __u8 data );
   void readSensorReg( __u16* x, __u16* y, __u16* z );
+  void readAccel(float *x, float *y, float *z);
 
   __u8 readID();
   
 private:
   I2c *i2c_;
+  Adxl345Options opt_;
+  float scale_;
 };
 
 #endif // ADXL345_H

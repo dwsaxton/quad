@@ -19,8 +19,12 @@ public:
   __u8 sampleDiv;
 };
 
+/**
+ * Gyroscope on 9dof stick.
+ */
 class Itg3200 {
-  Itg3200(I2c *i2c, Itg3200Options options);
+public:
+  Itg3200(I2c *i2c, Itg3200Options options = Itg3200Options());
 
   /**
   * The gyroscope IC has an internal oscillator set to 1kHz (also can be set to

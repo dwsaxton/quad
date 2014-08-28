@@ -3,6 +3,9 @@
 
 #include "i2c.h"
 
+/**
+ * Compass on 9dof stick.
+ */
 class Hmc5883 {
 public:
   Hmc5883(I2c *i2c);

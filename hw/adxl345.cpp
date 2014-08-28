@@ -1,5 +1,7 @@
 #include "adxl345.h"
 
+#include <stdint.h>
+
 #include "i2c.h"
 
 #define ACCEL_ADDR 0x53
@@ -13,6 +15,7 @@
 #define ACCEL_FIFO_CTL 0x38
 
 Adxl345::Adxl345(I2c *i2c, Adxl345Options opt) {
+  opt_ = opt;
   i2c_ = i2c;
   i2c_->startChat(ACCEL_ADDR);
 // Put into standby mode to configure device
@@ -34,12 +37,24 @@ Adxl345::Adxl345(I2c *i2c, Adxl345Options opt) {
   i2c_->write_reg(ACCEL_FIFO_CTL, fifo);
   
   __u8 fmt = 0;
+  scale_ = 2 * 9.81 / (1 << 10);
   switch ( opt.accelRange )
   {
-    case Adxl345Options::g2: break;
-    case Adxl345Options::g4: fmt |= 1; break;
-    case Adxl345Options::g8: fmt |= 2; break;
-    case Adxl345Options::g16: fmt |= 3; break;
+    case Adxl345Options::g2:
+      scale_ *= 2;
+      break;
+    case Adxl345Options::g4:
+      scale_ *= 4;
+      fmt |= 1;
+      break;
+    case Adxl345Options::g8:
+      scale_ *= 8;
+      fmt |= 2;
+      break;
+    case Adxl345Options::g16:
+      scale_ *= 16;
+      fmt |= 3;
+      break;
   }
   
   // "Full resolution" mode
@@ -89,6 +104,14 @@ void Adxl345::readSensorReg(__u16 *x, __u16 *y, __u16 *z)
   i2c_->read_reg_2((ACCEL_DATAX0 | 0x40 | 0x80) + 0, x);
   i2c_->read_reg_2((ACCEL_DATAX0 | 0x40 | 0x80) + 2, y);
   i2c_->read_reg_2((ACCEL_DATAX0 | 0x40 | 0x80) + 4, z);
+}
+
+void Adxl345::readAccel(float *x, float *y, float *z) {
+  __u16 x_, y_, z_;
+  readSensorReg(&x_, &y_, &z_);
+  *x = scale_ * *reinterpret_cast<int16_t*>(&x_);
+  *y = scale_ * *reinterpret_cast<int16_t*>(&y_);
+  *z = scale_ * *reinterpret_cast<int16_t*>(&z_);
 }
 
 __u8 Adxl345::readID() {
