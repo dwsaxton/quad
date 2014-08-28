@@ -1,6 +1,7 @@
 #include "globals.h"
 
 #include <time.h>
+#include <X11/Xlib.h>
 
 #include "controllooper.h"
 #include "imu.h"
@@ -14,6 +15,12 @@ Globals &Globals::self() {
 }
 
 Globals::Globals() {
+  if (XOpenDisplay(NULL)) {
+    environment_ = Simulation;
+  } else {
+    environment_ = OnBoard;
+  }
+
   simulated_quad_running_ = false;
   i2c_ = new RaspberryI2c();
   control_looper_ = new ControlLooper();
@@ -24,8 +31,10 @@ Globals::Globals() {
   timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   initial_seconds_ = ts.tv_sec;
-  
-  new thread(&Globals::runSimulatedQuad, this);
+
+  if (environment_ == Simulation) {
+    new thread(&Globals::runSimulatedQuad, this);
+  }
 }
 
 int64_t Globals::currentTime_us() const {

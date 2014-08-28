@@ -22,9 +22,14 @@ int main(int argc, char *argv[])
   TestRotationPlanner();
   TestOnlineLearner();
 
-  QApplication app(argc, argv);
-  Globals::self();
-  Interface interface;
-  interface.show();
-  return app.exec();
+  Globals & globals = Globals::self();
+  if (globals.environment() == Globals::OnBoard) {
+    QCoreApplication app(argc, argv);
+    return app.exec();
+  } else {
+    QApplication app(argc, argv);
+    Interface interface;
+    interface.show();
+    return app.exec();
+  }
 }

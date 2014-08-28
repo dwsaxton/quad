@@ -47,6 +47,18 @@ public:
    */
   void reset();
 
+  enum Environment {
+    OnBoard,
+    Simulation,
+    Receiving,
+  };
+
+  /**
+   * Obtain the environment we're running in (whether we're onboard the quad,
+   * or in a simulation environment, or receiving quad information.
+   */
+  Environment environment() const { return environment_; }
+
 private:
   void runSimulatedQuad();
   Globals();
@@ -56,6 +68,7 @@ private:
   Propellers *propellers_;
   Quad *simulated_quad_;
   I2c *i2c_;
+  Environment environment_;
 
   time_t initial_seconds_;
   bool simulated_quad_running_;
