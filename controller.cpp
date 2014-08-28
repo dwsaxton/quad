@@ -1,17 +1,9 @@
 #include "controller.h"
 
 #include "controllooper.h"
-// #include "observer.h"
-
-#include <QVector>
 
 using namespace QP;
 
-#include <Eigen/Cholesky>
-#include <Eigen/Core>
-
-#include <cassert>
-#include <cmath>
 #include <iostream>
 using namespace std;
 

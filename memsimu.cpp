@@ -4,9 +4,7 @@
 #include <thread>
 using namespace std;
 
-#include "hw/adxl345.h"
 #include "globals.h"
-#include "hw/itg3200.h"
 #include "sensors.h"
 #include "quad.h"
 
@@ -30,6 +28,7 @@ void MemsImu::run() {
     last_acceleration_ = sensors_->readAccelerometer();
     last_angular_acceleration_ = sensors_->readGyroscope();
     cout << "accel: " << last_acceleration_.transpose() << endl;
+    cout << "gyro: " << last_angular_acceleration_.transpose() << endl;
     int64_t new_time = Globals::self().currentTime_us();
     state_ = step(state_, last_acceleration_, last_angular_acceleration_, (new_time - time_) * 1e-6);
     time_ = new_time;
