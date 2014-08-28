@@ -1,7 +1,7 @@
 #include "controller.h"
 
 #include "controllooper.h"
-#include "observer.h"
+// #include "observer.h"
 
 #include <QVector>
 

@@ -1,18 +1,12 @@
+#include "interface.h"
+
 #include <QtGui>
 
 #include "controllooper.h"
 #include "globals.h"
-#include "highercontroller.h"
 #include "imu.h"
-#include "interface.h"
-#include "observer.h"
 #include "propellers.h"
 #include "quad.h"
-
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-using namespace std;
 
 Interface::Interface()
 {

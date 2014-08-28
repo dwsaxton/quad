@@ -2,7 +2,7 @@
 
 #include "controllooper.h"
 #include "globals.h"
-#include "observer.h"
+// #include "observer.h"
 #include "path.h"
 #include "quad.h"
 #include "imu.h"
