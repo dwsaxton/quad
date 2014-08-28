@@ -24,7 +24,7 @@ Globals::Globals() {
   simulated_quad_running_ = false;
   i2c_ = new RaspberryI2c();
   control_looper_ = new ControlLooper();
-  imu_ = new Imu(environment_);
+  imu_ = new Imu(environment_, i2c_);
   propellers_ = new Propellers();
   simulated_quad_ = new Quad();
 

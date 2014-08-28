@@ -83,7 +83,7 @@ double CRandomWalk::step( double period, double *bias_scale, double *bias_add )
 
 
 //BEGIN class Sensors
-Sensors::Sensors(int environment)
+Sensors::Sensors(int environment, I2c *i2c)
 {
   for ( int i = 0; i < 3; ++i )
   {
@@ -95,7 +95,6 @@ Sensors::Sensors(int environment)
   reset();
 
   if (environment == Globals::OnBoard) {
-    I2c *i2c = Globals::self().i2c();
     accelerometer_ = new Adxl345(i2c);
     gyroscope_ = new Itg3200(i2c);
   } else {

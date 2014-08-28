@@ -2,8 +2,8 @@
 
 #include "memsimu.h"
 
-Imu::Imu(int environment) {
-  mems_imu_ = new MemsImu(environment);
+Imu::Imu(int environment, I2c *i2c) {
+  mems_imu_ = new MemsImu(environment, i2c);
 }
 
 Imu::~Imu() {
