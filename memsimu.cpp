@@ -10,8 +10,8 @@ using namespace std;
 
 const int refresh_us = 10000; // 10 ms
 
-MemsImu::MemsImu(int environment, I2c *i2c) {
-  sensors_ = new Sensors(environment, i2c);
+MemsImu::MemsImu(int environment) {
+  sensors_ = new Sensors(environment);
   last_acceleration_.setZero();
   last_angular_acceleration_.setZero();
   new thread(&MemsImu::run, this);

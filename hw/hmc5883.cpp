@@ -1,5 +1,7 @@
 #include "hmc5883.h"
 
+#if 0
+
 #include "i2c.h"
 
 const __u8 COMPASS_ADDR = 0x1e;
@@ -44,3 +46,5 @@ void Hmc5883::readSensorReg( __u16 *x, __u16 *y, __u16 *z )
   i2c_->read_reg_2(REG_DATAXM + 2, y);
   i2c_->read_reg_2(REG_DATAXM + 4, z);
 }
+
+#endif

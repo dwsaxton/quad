@@ -1,6 +1,8 @@
 #ifndef HMC5883_H
 #define HMC5883_H
 
+#if 0
+
 #include "i2c.h"
 
 /**
@@ -23,5 +25,7 @@ public:
 private:
   I2c *i2c_;
 };
+
+#endif
 
 #endif // HMC5883_H

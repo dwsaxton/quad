@@ -5,83 +5,502 @@
 
 #include "i2c.h"
 
-const __u8 GYRO_ADDR = 0x68;
-
-const __u8 REG_WHO_AM_I = 0x0;
-const __u8 REG_SMPLRT_DIV = 0x15;
-const __u8 REG_DLPF_FS = 0x16;
-const __u8 REG_INT_CFG = 0x17;
-const __u8 REG_INT_STATUS = 0x1a;
-const __u8 REG_TEMP_OUT_H = 0x1b;
-const __u8 REG_TEMP_OUT_L = 0x1c;
-const __u8 REG_GYRO_XOUT_H = 0x1d;
-// ...
-const __u8 REG_PWR_MGM = 0x3e;
-
-Itg3200::Itg3200(I2c *i2c, Itg3200Options options) {
-  i2c_ = i2c;
-  i2c_->startChat(GYRO_ADDR);
-  // Reset to defaults
-  i2c_->write_reg(REG_PWR_MGM, 0x80);
-  
-  setSampleDivider(options.sampleDiv);
-  initDlpfReg(options.lowPass );
-  
-  i2c_->write_reg( REG_PWR_MGM, 0x0 );
+/** Default constructor, uses default I2C address.
+ * @see ITG3200_DEFAULT_ADDRESS
+ */
+Itg3200::Itg3200() {
+    devAddr = ITG3200_DEFAULT_ADDRESS;
+    initialize();
 }
 
-void Itg3200::initDlpfReg(Itg3200Options::LowPass lp) {
-  char dlpf = 0;
-  
-  // Required for proper gyro operation, sets full-scale range of gyros
-  dlpf |= 3 << 3;
-  
-  // First three bits of dlpf select the internal sample rate and low pass
-  // filter bandwidth, as detailed below.
-  // 
-  // 0 256Hz 8kHz
-  // 1 188Hz 1kHz
-  // 2 98Hz 1kHz
-  // 3 42Hz 1kHz
-  // 4 20Hz 1kHz
-  // 5 10Hz 1kHz
-  // 6 5Hz 1kHz
-  // 7 reserved
-  
-  // Low pass filter of 188Hz
-  switch ( lp )
-  {
-    case Itg3200Options::lp188: dlpf |= 1; break;
-    case Itg3200Options::lp98: dlpf |= 2; break;
-    case Itg3200Options::lp42: dlpf |= 3; break;
-    case Itg3200Options::lp20: dlpf |= 4; break;
-    case Itg3200Options::lp10: dlpf |= 5; break;
-    case Itg3200Options::lp5: dlpf |= 6; break;
-  }
-
-  i2c_->startChat(GYRO_ADDR);
-  i2c_->write_reg(REG_DLPF_FS, dlpf);
+/** Specific address constructor.
+ * @param address I2C address
+ * @see ITG3200_DEFAULT_ADDRESS
+ * @see ITG3200_ADDRESS_AD0_LOW
+ * @see ITG3200_ADDRESS_AD0_HIGH
+ */
+Itg3200::Itg3200(uint8_t address) {
+    devAddr = address;
+    initialize();
 }
 
-void Itg3200::setSampleDivider( __u8 div )
-{
-  i2c_->startChat(GYRO_ADDR);
-  i2c_->write_reg( REG_SMPLRT_DIV, div );
+/** Power on and prepare for general usage.
+ * This will activate the gyroscope, so be sure to adjust the power settings
+ * after you call this method if you want it to enter standby mode, or another
+ * less demanding mode of operation. This also sets the gyroscope to use the
+ * X-axis gyro for a clock source. Note that it doesn't have any delays in the
+ * routine, which means you might want to add ~50ms to be safe if you happen
+ * to need to read gyro data immediately after initialization. The data will
+ * flow in either case, but the first reports may have higher error offsets.
+ */
+void Itg3200::initialize() {
+    setFullScaleRange(ITG3200_FULLSCALE_2000);
+    setClockSource(ITG3200_CLOCK_PLL_XGYRO);
 }
 
-void Itg3200::readSensorReg( __u16 *x, __u16 *y, __u16 *z ) {
-  i2c_->startChat(GYRO_ADDR);
-  i2c_->read_reg_2(REG_GYRO_XOUT_H + 0, x);
-  i2c_->read_reg_2(REG_GYRO_XOUT_H + 2, z);
-  i2c_->read_reg_2(REG_GYRO_XOUT_H + 4, x);
+/** Verify the I2C connection.
+ * Make sure the device is connected and responds as expected.
+ * @return True if connection is valid, false otherwise
+ */
+bool Itg3200::testConnection() {
+    return getDeviceID() == 0b110100;
 }
 
-void Itg3200::read( float *x, float *y, float *z ) {
-  __u16 x_, y_, z_;
-  readSensorReg(&x_, &y_, &z_);
+// WHO_AM_I register
+
+/** Get Device ID.
+ * This register is used to verify the identity of the device (0b110100).
+ * @return Device ID (should be 0x34, 52 dec, 64 oct)
+ * @see ITG3200_RA_WHO_AM_I
+ * @see ITG3200_RA_DEVID_BIT
+ * @see ITG3200_RA_DEVID_LENGTH
+ */
+uint8_t Itg3200::getDeviceID() {
+    I2c::readBits(devAddr, ITG3200_RA_WHO_AM_I, ITG3200_DEVID_BIT, ITG3200_DEVID_LENGTH, buffer);
+    return buffer[0];
+}
+/** Set Device ID.
+ * Write a new ID into the WHO_AM_I register (no idea why this should ever be
+ * necessary though).
+ * @param id New device ID to set.
+ * @see getDeviceID()
+ * @see ITG3200_RA_WHO_AM_I
+ * @see ITG3200_RA_DEVID_BIT
+ * @see ITG3200_RA_DEVID_LENGTH
+ */
+void Itg3200::setDeviceID(uint8_t id) {
+    I2c::writeBits(devAddr, ITG3200_RA_WHO_AM_I, ITG3200_DEVID_BIT, ITG3200_DEVID_LENGTH, id);
+}
+
+// SMPLRT_DIV register
+
+/** Get sample rate.
+ * This register determines the sample rate of the ITG-3200 gyros. The gyros'
+ * outputs are sampled internally at either 1kHz or 8kHz, determined by the
+ * DLPF_CFG setting (see register 22). This sampling is then filtered digitally
+ * and delivered into the sensor registers after the number of cycles determined
+ * by this register. The sample rate is given by the following formula:
+ *
+ * F_sample = F_internal / (divider+1), where F_internal is either 1kHz or 8kHz
+ *
+ * As an example, if the internal sampling is at 1kHz, then setting this
+ * register to 7 would give the following:
+ *
+ * F_sample = 1kHz / (7 + 1) = 125Hz, or 8ms per sample
+ *
+ * @return Current sample rate
+ * @see setDLPFBandwidth()
+ * @see ITG3200_RA_SMPLRT_DIV
+ */
+uint8_t Itg3200::getRate() {
+    I2c::readByte(devAddr, ITG3200_RA_SMPLRT_DIV, buffer);
+    return buffer[0];
+}
+/** Set sample rate.
+ * @param rate New sample rate
+ * @see getRate()
+ * @see setDLPFBandwidth()
+ * @see ITG3200_RA_SMPLRT_DIV
+ */
+void Itg3200::setRate(uint8_t rate) {
+    I2c::writeByte(devAddr, ITG3200_RA_SMPLRT_DIV, rate);
+}
+
+// DLPF_FS register
+
+/** Set full-scale range.
+ * The FS_SEL parameter allows setting the full-scale range of the gyro sensors,
+ * as described in the table below. The power-on-reset value of FS_SEL is 00h.
+ * Set to 03h for proper operation.
+ *
+ * 0 = Reserved
+ * 1 = Reserved
+ * 2 = Reserved
+ * 3 = +/- 2000 degrees/sec
+ *
+ * @return Current full-scale range setting
+ * @see ITG3200_FULLSCALE_2000
+ * @see ITG3200_RA_DLPF_FS
+ * @see ITG3200_DF_FS_SEL_BIT
+ * @see ITG3200_DF_FS_SEL_LENGTH
+ */
+uint8_t Itg3200::getFullScaleRange() {
+    I2c::readBits(devAddr, ITG3200_RA_DLPF_FS, ITG3200_DF_FS_SEL_BIT, ITG3200_DF_FS_SEL_LENGTH, buffer);
+    return buffer[0];
+}
+/** Set full-scale range setting.
+ * @param range New full-scale range value
+ * @see getFullScaleRange()
+ * @see ITG3200_FULLSCALE_2000
+ * @see ITG3200_RA_DLPF_FS
+ * @see ITG3200_DF_FS_SEL_BIT
+ * @see ITG3200_DF_FS_SEL_LENGTH
+ */
+void Itg3200::setFullScaleRange(uint8_t range) {
+    I2c::writeBits(devAddr, ITG3200_RA_DLPF_FS, ITG3200_DF_FS_SEL_BIT, ITG3200_DF_FS_SEL_LENGTH, range);
+}
+/** Get digital low-pass filter bandwidth.
+ * The DLPF_CFG parameter sets the digital low pass filter configuration. It
+ * also determines the internal sampling rate used by the device as shown in
+ * the table below.
+ *
+ * DLPF_CFG | Low-Pass Filter Bandwidth | Internal Sample Rate
+ * ---------+---------------------------+---------------------
+ * 0        | 256Hz                     | 8kHz
+ * 1        | 188Hz                     | 1kHz
+ * 2        | 98Hz                      | 1kHz
+ * 3        | 42Hz                      | 1kHz
+ * 4        | 20Hz                      | 1kHz
+ * 5        | 10Hz                      | 1kHz
+ * 6        | 5Hz                       | 1kHz
+ * 7        | Reserved                  | Reserved
+ *
+ * @return DLFP bandwidth setting
+ * @see ITG3200_RA_DLPF_FS
+ * @see ITG3200_DF_DLPF_CFG_BIT
+ * @see ITG3200_DF_DLPF_CFG_LENGTH
+ */
+uint8_t Itg3200::getDLPFBandwidth() {
+    I2c::readBits(devAddr, ITG3200_RA_DLPF_FS, ITG3200_DF_DLPF_CFG_BIT, ITG3200_DF_DLPF_CFG_LENGTH, buffer);
+    return buffer[0];
+}
+/** Set digital low-pass filter bandwidth.
+ * @param bandwidth New DLFP bandwidth setting
+ * @see getDLPFBandwidth()
+ * @see ITG3200_DLPF_BW_256
+ * @see ITG3200_RA_DLPF_FS
+ * @see ITG3200_DF_DLPF_CFG_BIT
+ * @see ITG3200_DF_DLPF_CFG_LENGTH
+ */
+void Itg3200::setDLPFBandwidth(uint8_t bandwidth) {
+    I2c::writeBits(devAddr, ITG3200_RA_DLPF_FS, ITG3200_DF_DLPF_CFG_BIT, ITG3200_DF_DLPF_CFG_LENGTH, bandwidth);
+}
+
+// INT_CFG register
+
+/** Get interrupt logic level mode.
+ * Will be set 0 for active-high, 1 for active-low.
+ * @return Current interrupt mode (0=active-high, 1=active-low)
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_ACTL_BIT
+ */
+bool Itg3200::getInterruptMode() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_ACTL_BIT, buffer);
+    return buffer[0];
+}
+/** Set interrupt logic level mode.
+ * @param mode New interrupt mode (0=active-high, 1=active-low)
+ * @see getInterruptMode()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_ACTL_BIT
+ */
+void Itg3200::setInterruptMode(bool mode) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_ACTL_BIT, mode);
+}
+/** Get interrupt drive mode.
+ * Will be set 0 for push-pull, 1 for open-drain.
+ * @return Current interrupt drive mode (0=push-pull, 1=open-drain)
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_OPEN_BIT
+ */
+bool Itg3200::getInterruptDrive() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_OPEN_BIT, buffer);
+    return buffer[0];
+}
+/** Set interrupt drive mode.
+ * @param drive New interrupt drive mode (0=push-pull, 1=open-drain)
+ * @see getInterruptDrive()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_OPEN_BIT
+ */
+void Itg3200::setInterruptDrive(bool drive) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_OPEN_BIT, drive);
+}
+/** Get interrupt latch mode.
+ * Will be set 0 for 50us-pulse, 1 for latch-until-int-cleared.
+ * @return Current latch mode (0=50us-pulse, 1=latch-until-int-cleared)
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_LATCH_INT_EN_BIT
+ */
+bool Itg3200::getInterruptLatch() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_LATCH_INT_EN_BIT, buffer);
+    return buffer[0];
+}
+/** Set interrupt latch mode.
+ * @param latch New latch mode (0=50us-pulse, 1=latch-until-int-cleared)
+ * @see getInterruptLatch()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_LATCH_INT_EN_BIT
+ */
+void Itg3200::setInterruptLatch(bool latch) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_LATCH_INT_EN_BIT, latch);
+}
+/** Get interrupt latch clear mode.
+ * Will be set 0 for status-read-only, 1 for any-register-read.
+ * @return Current latch clear mode (0=status-read-only, 1=any-register-read)
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_INT_ANYRD_2CLEAR_BIT
+ */
+bool Itg3200::getInterruptLatchClear() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_INT_ANYRD_2CLEAR_BIT, buffer);
+    return buffer[0];
+}
+/** Set interrupt latch clear mode.
+ * @param clear New latch clear mode (0=status-read-only, 1=any-register-read)
+ * @see getInterruptLatchClear()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_INT_ANYRD_2CLEAR_BIT
+ */
+void Itg3200::setInterruptLatchClear(bool clear) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_INT_ANYRD_2CLEAR_BIT, clear);
+}
+/** Get "device ready" interrupt enabled setting.
+ * Will be set 0 for disabled, 1 for enabled.
+ * @return Current interrupt enabled setting
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_ITG_RDY_EN_BIT
+ */
+bool Itg3200::getIntDeviceReadyEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_ITG_RDY_EN_BIT, buffer);
+    return buffer[0];
+}
+/** Set "device ready" interrupt enabled setting.
+ * @param enabled New interrupt enabled setting
+ * @see getIntDeviceReadyEnabled()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_ITG_RDY_EN_BIT
+ */
+void Itg3200::setIntDeviceReadyEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_ITG_RDY_EN_BIT, enabled);
+}
+/** Get "data ready" interrupt enabled setting.
+ * Will be set 0 for disabled, 1 for enabled.
+ * @return Current interrupt enabled setting
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_RAW_RDY_EN_BIT
+ */
+bool Itg3200::getIntDataReadyEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_RAW_RDY_EN_BIT, buffer);
+    return buffer[0];
+}
+/** Set "data ready" interrupt enabled setting.
+ * @param enabled New interrupt enabled setting
+ * @see getIntDataReadyEnabled()
+ * @see ITG3200_RA_INT_CFG
+ * @see ITG3200_INTCFG_RAW_RDY_EN_BIT
+ */
+void Itg3200::setIntDataReadyEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_INT_CFG, ITG3200_INTCFG_RAW_RDY_EN_BIT, enabled);
+}
+
+// INT_STATUS register
+
+/** Get Device Ready interrupt status.
+ * The ITG_RDY interrupt indicates that the PLL is ready and gyroscopic data can
+ * be read.
+ * @return Device Ready interrupt status
+ * @see ITG3200_RA_INT_STATUS
+ * @see ITG3200_INTSTAT_RAW_DATA_READY_BIT
+ */
+bool Itg3200::getIntDeviceReadyStatus() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_STATUS, ITG3200_INTSTAT_ITG_RDY_BIT, buffer);
+    return buffer[0];
+}
+/** Get Data Ready interrupt status.
+ * In normal use, the RAW_DATA_RDY interrupt is used to determine when new
+ * sensor data is available in and of the sensor registers (27 to 32).
+ * @return Data Ready interrupt status
+ * @see ITG3200_RA_INT_STATUS
+ * @see ITG3200_INTSTAT_RAW_DATA_READY_BIT
+ */
+bool Itg3200::getIntDataReadyStatus() {
+    I2c::readBit(devAddr, ITG3200_RA_INT_STATUS, ITG3200_INTSTAT_RAW_DATA_READY_BIT, buffer);
+    return buffer[0];
+}
+
+// TEMP_OUT_* registers
+
+/** Get current internal temperature.
+ * @return Temperature reading in 16-bit 2's complement format
+ * @see ITG3200_RA_TEMP_OUT_H
+ */
+int16_t Itg3200::getTemperature() {
+    I2c::readBytes(devAddr, ITG3200_RA_TEMP_OUT_H, 2, buffer);
+    return (((int16_t)buffer[0]) << 8) | buffer[1];
+}
+
+// GYRO_*OUT_* registers
+
+/** Get 3-axis gyroscope readings.
+ * @param x 16-bit signed integer container for X-axis rotation
+ * @param y 16-bit signed integer container for Y-axis rotation
+ * @param z 16-bit signed integer container for Z-axis rotation
+ * @see ITG3200_RA_GYRO_XOUT_H
+ */
+void Itg3200::getRotation(int16_t* x, int16_t* y, int16_t* z) {
+    I2c::readBytes(devAddr, ITG3200_RA_GYRO_XOUT_H, 6, buffer);
+    *x = (((int16_t)buffer[0]) << 8) | buffer[1];
+    *y = (((int16_t)buffer[2]) << 8) | buffer[3];
+    *z = (((int16_t)buffer[4]) << 8) | buffer[5];
+}
+
+void Itg3200::getRotation(float *x, float *y, float *z) {
+  int16_t x_, y_, z_;
+  getRotation(&x_, &y_, &z_);
   float scale = (M_PI / 180.0) * (1.0 / 14.375); // as per the datasheet
-  *x = scale * *reinterpret_cast<int16_t*>(&x_);
-  *y = scale * *reinterpret_cast<int16_t*>(&y_);
-  *z = scale * *reinterpret_cast<int16_t*>(&z_);
+  *x = scale * x_;
+  *y = scale * y_;
+  *z = scale * z_;
 }
 
+/** Get X-axis gyroscope reading.
+ * @return X-axis rotation measurement in 16-bit 2's complement format
+ * @see ITG3200_RA_GYRO_XOUT_H
+ */
+int16_t Itg3200::getRotationX() {
+    I2c::readBytes(devAddr, ITG3200_RA_GYRO_XOUT_H, 2, buffer);
+    return (((int16_t)buffer[0]) << 8) | buffer[1];
+}
+/** Get Y-axis gyroscope reading.
+ * @return Y-axis rotation measurement in 16-bit 2's complement format
+ * @see ITG3200_RA_GYRO_YOUT_H
+ */
+int16_t Itg3200::getRotationY() {
+    I2c::readBytes(devAddr, ITG3200_RA_GYRO_YOUT_H, 2, buffer);
+    return (((int16_t)buffer[0]) << 8) | buffer[1];
+}
+/** Get Z-axis gyroscope reading.
+ * @return Z-axis rotation measurement in 16-bit 2's complement format
+ * @see ITG3200_RA_GYRO_ZOUT_H
+ */
+int16_t Itg3200::getRotationZ() {
+    I2c::readBytes(devAddr, ITG3200_RA_GYRO_ZOUT_H, 2, buffer);
+    return (((int16_t)buffer[0]) << 8) | buffer[1];
+}
+
+// PWR_MGM register
+
+/** Trigger a full device reset.
+ * A small delay of ~50ms may be desirable after triggering a reset.
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_H_RESET_BIT
+ */
+void Itg3200::reset() {
+    I2c::writeBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_H_RESET_BIT, true);
+}
+/** Get sleep mode status.
+ * Setting the SLEEP bit in the register puts the device into very low power
+ * sleep mode. In this mode, only the serial interface and internal registers
+ * remain active, allowing for a very low standby current. Clearing this bit
+ * puts the device back into normal mode. To save power, the individual standby
+ * selections for each of the gyros should be used if any gyro axis is not used
+ * by the application.
+ * @return Current sleep mode enabled status
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_SLEEP_BIT
+ */
+bool Itg3200::getSleepEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_SLEEP_BIT, buffer);
+    return buffer[0];
+}
+/** Set sleep mode status.
+ * @param enabled New sleep mode enabled status
+ * @see getSleepEnabled()
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_SLEEP_BIT
+ */
+void Itg3200::setSleepEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_SLEEP_BIT, enabled);
+}
+/** Get X-axis standby enabled status.
+ * If enabled, the X-axis will not gather or report data (or use power).
+ * @return Current X-axis standby enabled status
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_XG_BIT
+ */
+bool Itg3200::getStandbyXEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_XG_BIT, buffer);
+    return buffer[0];
+}
+/** Set X-axis standby enabled status.
+ * @param New X-axis standby enabled status
+ * @see getStandbyXEnabled()
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_XG_BIT
+ */
+void Itg3200::setStandbyXEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_XG_BIT, enabled);
+}
+/** Get Y-axis standby enabled status.
+ * If enabled, the Y-axis will not gather or report data (or use power).
+ * @return Current Y-axis standby enabled status
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_YG_BIT
+ */
+bool Itg3200::getStandbyYEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_YG_BIT, buffer);
+    return buffer[0];
+}
+/** Set Y-axis standby enabled status.
+ * @param New Y-axis standby enabled status
+ * @see getStandbyYEnabled()
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_YG_BIT
+ */
+void Itg3200::setStandbyYEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_YG_BIT, enabled);
+}
+/** Get Z-axis standby enabled status.
+ * If enabled, the Z-axis will not gather or report data (or use power).
+ * @return Current Z-axis standby enabled status
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_ZG_BIT
+ */
+bool Itg3200::getStandbyZEnabled() {
+    I2c::readBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_ZG_BIT, buffer);
+    return buffer[0];
+}
+/** Set Z-axis standby enabled status.
+ * @param New Z-axis standby enabled status
+ * @see getStandbyZEnabled()
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_STBY_ZG_BIT
+ */
+void Itg3200::setStandbyZEnabled(bool enabled) {
+    I2c::writeBit(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_STBY_ZG_BIT, enabled);
+}
+/** Get clock source setting.
+ * @return Current clock source setting
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_CLK_SEL_BIT
+ * @see ITG3200_PWR_CLK_SEL_LENGTH
+ */
+uint8_t Itg3200::getClockSource() {
+    I2c::readBits(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_CLK_SEL_BIT, ITG3200_PWR_CLK_SEL_LENGTH, buffer);
+    return buffer[0];
+}
+/** Set clock source setting.
+ * On power up, the ITG-3200 defaults to the internal oscillator. It is highly recommended that the device is configured to use one of the gyros (or an external clock) as the clock reference, due to the improved stability.
+ *
+ * The CLK_SEL setting determines the device clock source as follows:
+ *
+ * CLK_SEL | Clock Source
+ * --------+--------------------------------------
+ * 0       | Internal oscillator
+ * 1       | PLL with X Gyro reference
+ * 2       | PLL with Y Gyro reference
+ * 3       | PLL with Z Gyro reference
+ * 4       | PLL with external 32.768kHz reference
+ * 5       | PLL with external 19.2MHz reference
+ * 6       | Reserved
+ * 7       | Reserved
+ *
+ * @param source New clock source setting
+ * @see getClockSource()
+ * @see ITG3200_RA_PWR_MGM
+ * @see ITG3200_PWR_CLK_SEL_BIT
+ * @see ITG3200_PWR_CLK_SEL_LENGTH
+ */
+void Itg3200::setClockSource(uint8_t source) {
+    I2c::writeBits(devAddr, ITG3200_RA_PWR_MGM, ITG3200_PWR_CLK_SEL_BIT, ITG3200_PWR_CLK_SEL_LENGTH, source);
+}

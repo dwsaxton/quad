@@ -7,7 +7,7 @@
 #include "imu.h"
 #include "propellers.h"
 #include "quad.h"
-#include "hw/raspberryi2c.h"
+#include "hw/i2c.h"
 
 Globals &Globals::self() {
   static Globals instance;
@@ -22,9 +22,9 @@ Globals::Globals() {
   }
 
   simulated_quad_running_ = false;
-  i2c_ = new RaspberryI2c();
+  i2c_ = new I2c();
   control_looper_ = new ControlLooper();
-  imu_ = new Imu(environment_, i2c_);
+  imu_ = new Imu(environment_);
   propellers_ = new Propellers();
   simulated_quad_ = new Quad();
 

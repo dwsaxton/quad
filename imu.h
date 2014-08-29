@@ -4,13 +4,12 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
-class I2c;
 class MemsImu;
 class QuadState;
 
 class Imu {
 public:
-  Imu(int environment, I2c* i2c);
+  Imu(int environment);
   ~Imu();
 
   /**

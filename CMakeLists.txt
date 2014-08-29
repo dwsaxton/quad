@@ -7,7 +7,7 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} /usr/include/eige
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 set(CMAKE_AUTOMOC ON)
-set(Quad_SRCS hw/raspberryi2c.cpp hw/hmc5883.cpp hw/itg3200.cpp hw/adxl345.cpp propellers.cpp memsimu.cpp imu.cpp globals.cpp onlinelearner.cpp planner1d.cpp linearplannermono.cpp ssc.cpp pathinterceptplanner.cpp linearplanner3d.cpp interceptplot.cpp linearplanner.cpp quadratic3d.cpp quadraticintercept.cpp rotationplanner.cpp highercontroller.cpp simplequadraticintercept.cpp sensors.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp controllooper.cpp controller.cpp main.cpp glquad.cpp)
+set(Quad_SRCS hw/i2c.cpp hw/hmc5883.cpp hw/itg3200.cpp hw/adxl345.cpp propellers.cpp memsimu.cpp imu.cpp globals.cpp onlinelearner.cpp planner1d.cpp linearplannermono.cpp ssc.cpp pathinterceptplanner.cpp linearplanner3d.cpp interceptplot.cpp linearplanner.cpp quadratic3d.cpp quadraticintercept.cpp rotationplanner.cpp highercontroller.cpp simplequadraticintercept.cpp sensors.cpp interface.cpp qpsolver.cpp quadstate.cpp quad.cpp controllooper.cpp controller.cpp main.cpp glquad.cpp)
 set(Quad_FORMS interface.ui)
 QT4_WRAP_UI(Quad_FORMS_HEADERS ${Quad_FORMS})
 qt4_automoc(${Quad_SRCS})

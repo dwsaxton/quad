@@ -83,7 +83,7 @@ double CRandomWalk::step( double period, double *bias_scale, double *bias_add )
 
 
 //BEGIN class Sensors
-Sensors::Sensors(int environment, I2c *i2c)
+Sensors::Sensors(int environment)
 {
   for ( int i = 0; i < 3; ++i )
   {
@@ -95,8 +95,8 @@ Sensors::Sensors(int environment, I2c *i2c)
   reset();
 
   if (environment == Globals::OnBoard) {
-    accelerometer_ = new Adxl345(i2c);
-    gyroscope_ = new Itg3200(i2c);
+    accelerometer_ = new Adxl345();
+    gyroscope_ = new Itg3200();
   } else {
     accelerometer_ = nullptr;
     gyroscope_ = nullptr;
@@ -135,7 +135,7 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
 {
   if (accelerometer_ != nullptr) {
     float x, y, z;
-    accelerometer_->readAccel(&x, &y, &z);
+    accelerometer_->getAcceleration(&x, &y, &z);
     return Vector3d(x, y, z);
   }
 
@@ -152,12 +152,18 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
 
 Vector3d Sensors::readGyroscope( double step, Vector3d *bias_scale, Vector3d *bias_add )
 {
-   Quad *q = Globals::self().simulatedQuad();
-   Vector3d g = q->state().omega;
-   Vector3d x = stepWalk( step, m_bg, g, bias_scale, bias_add );
+  if (gyroscope_ != nullptr) {
+    float x, y, z;
+    gyroscope_->getRotation(&x, &y, &z);
+    return Vector3d(x, y, z);
+  }
+
+  Quad *q = Globals::self().simulatedQuad();
+  Vector3d g = q->state().omega;
+  Vector3d x = stepWalk( step, m_bg, g, bias_scale, bias_add );
    
 //    if ( World::self()->environment() == World::Simulation )
-	  return x;
+  return x;
 //    else
 // 	  return World::self()->transceiver()->gyro();
 }

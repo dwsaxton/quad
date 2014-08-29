@@ -35,7 +35,6 @@ private:
    double m_var;
 };
 
-class I2c;
 class Itg3200;
 class Adxl345;
 
@@ -44,7 +43,7 @@ class Sensors
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  Sensors(int environment, I2c *i2c);
+  Sensors(int environment);
   
   void reset();
   

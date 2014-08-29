@@ -10,12 +10,11 @@ using namespace Eigen;
 
 #include "quadstate.h"
 
-class I2c;
 class Sensors;
 
 class MemsImu {
 public:
-  MemsImu(int environment, I2c* i2c);
+  MemsImu(int environment);
 
   // For the following three functions, see the corresponding descriptions in
   // the Imu class.
