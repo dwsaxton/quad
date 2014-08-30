@@ -4,9 +4,11 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
+class Pca9685;
+
 class Propellers {
 public:
-  Propellers();
+  Propellers(int environment);
 
   /**
    * Sets the input to the ith propeller. input is between 0 and 1, representing
@@ -27,6 +29,7 @@ public:
 
 private:
   Vector4d input_; // the last set input
+  Pca9685 *pwm_;
 };
 
 #endif // PROPELLERS_H

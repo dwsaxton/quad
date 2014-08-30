@@ -1,9 +1,9 @@
 #include "i2c.h"
 
-// #include <cstddef>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/i2c-dev.h>
+#include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -12,13 +12,14 @@
 using namespace std;
 
 int I2c::file_ = -1;
+mutex * I2c::mutex_ = new mutex();
 
 I2c::I2c() {
   if (file_ != -1) {
     cerr << "Warning: attempting to create I2c twice" << endl;
     return;
   }
-  const char *filename = "/dev/i2c-1"; 
+  const char *filename = "/dev/i2c-0"; 
   file_ = open(filename, O_RDWR);
   if (file_ < 0) {
     std::cerr << "Failed to open the i2c bus" << std::endl;
@@ -37,12 +38,44 @@ void print_error() {
  * @return Number of bytes read (-1 indicates failure)
  */
 int8_t I2c::readBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t *data) {
+  lock_guard<mutex> lock(*mutex_);
   if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
     print_error();
     return false;
   }
-  write(file_, &regAddr, 1);
-  return read(file_, data, length);
+  int bytes_written = write(file_, &regAddr, 1);
+  if (bytes_written != 1) {
+    cerr << "I2c::readBytes: Requested single byte write, but " << bytes_written << " bytes actually written" << endl;
+  }
+  int bytes_read = read(file_, data, length);
+  if (bytes_read != length) {
+    cerr << "I2c::readBytes: Requested " << (int) length << " byte read, but " << bytes_read << " bytes actually read" << endl;
+  }
+  return bytes_read;
+}
+
+/** Write multiple bytes to an 8-bit device register.
+ * @param devAddr I2C slave device address
+ * @param regAddr First register address to write to
+ * @param length Number of bytes to write
+ * @param data Buffer to copy new data from
+ * @return Status of operation (true = success)
+ */
+bool I2c::writeBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t* data) {
+  lock_guard<mutex> lock(*mutex_);
+  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
+    print_error();
+    return false;
+  }
+  int bytes_written = write(file_, &regAddr, 1);
+  if (bytes_written != 1) {
+    cerr << "I2c::writeBytes: Requested single byte write, but " << bytes_written << " bytes actually written" << endl;
+  }
+  bytes_written = write(file_, data, length);
+  if (bytes_written != length) {
+    cerr << "I2c::writeBytes: Requested " << (int) length << " byte write, but " << bytes_written << " bytes actually written" << endl;
+  }
+  return true; // TODO error checking?
 }
 
 /** Read multiple words from a 16-bit device register.
@@ -58,23 +91,6 @@ int8_t I2c::readWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16_t
     return -1;
   }
   return bytesRead / 2;
-}
-
-/** Write multiple bytes to an 8-bit device register.
- * @param devAddr I2C slave device address
- * @param regAddr First register address to write to
- * @param length Number of bytes to write
- * @param data Buffer to copy new data from
- * @return Status of operation (true = success)
- */
-bool I2c::writeBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t* data) {
-  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
-    print_error();
-    return false;
-  }
-  write(file_, &regAddr, 1);
-  write(file_, data, length);
-  return true; // TODO error checking?
 }
 
 /** Write multiple words to a 16-bit device register.
@@ -172,7 +188,17 @@ int8_t I2c::readBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_
  * @return Status of read operation (true = success)
  */
 int8_t I2c::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data) {
-    return readBytes(devAddr, regAddr, 1, data);
+//     return readBytes(devAddr, regAddr, 1, data);
+  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
+    print_error();
+  }
+  __s32 result = i2c_smbus_read_byte_data(file_, regAddr);
+  *data = result;
+  if (result < 0) {
+    print_error();
+    return false;
+  }
+  return true;
 }
 
 /** Read single word from a 16-bit device register.
@@ -182,7 +208,17 @@ int8_t I2c::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data) {
  * @return Status of read operation (true = success)
  */
 int8_t I2c::readWord(uint8_t devAddr, uint8_t regAddr, uint16_t *data) {
-    return readWords(devAddr, regAddr, 1, data);
+//     return readWords(devAddr, regAddr, 1, data);
+  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
+    print_error();
+  }
+  __s32 result = i2c_smbus_read_word_data(file_, regAddr);
+  *data = result;
+  if (result < 0) {
+    print_error();
+    return false;
+  }
+  return true;
 }
 /** write a single bit in an 8-bit device register.
  * @param devAddr I2C slave device address
@@ -277,7 +313,12 @@ bool I2c::writeBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t
  * @return Status of operation (true = success)
  */
 bool I2c::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data) {
-    return writeBytes(devAddr, regAddr, 1, &data);
+  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
+    print_error();
+  }
+  __s32 res = i2c_smbus_write_byte_data(file_, regAddr, data);
+  return res == 0;
+//   return writeBytes(devAddr, regAddr, 1, &data);
 }
 
 /** Write single word to a 16-bit device register.
@@ -287,5 +328,10 @@ bool I2c::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data) {
  * @return Status of operation (true = success)
  */
 bool I2c::writeWord(uint8_t devAddr, uint8_t regAddr, uint16_t data) {
-    return writeWords(devAddr, regAddr, 1, &data);
+  if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
+    print_error();
+  }
+  __s32 res = i2c_smbus_write_word_data(file_, regAddr, data);
+  return res == 0;
+//     return writeWords(devAddr, regAddr, 1, &data);
 }

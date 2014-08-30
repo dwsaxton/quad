@@ -21,11 +21,11 @@ Globals::Globals() {
     environment_ = OnBoard;
   }
 
-  simulated_quad_running_ = false;
+  simulated_quad_running_ = true;
   i2c_ = new I2c();
   control_looper_ = new ControlLooper();
   imu_ = new Imu(environment_);
-  propellers_ = new Propellers();
+  propellers_ = new Propellers(environment_);
   simulated_quad_ = new Quad();
 
   timespec ts;

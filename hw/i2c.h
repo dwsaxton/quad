@@ -29,6 +29,10 @@ THE SOFTWARE.
 ===============================================
 */
 
+namespace std {
+class mutex;
+};
+
 class I2c {
 public:
   I2c();
@@ -53,6 +57,7 @@ public:
 
 private:
   static int file_;
+  static std::mutex* mutex_;
 };
 
 #endif // I2C_H
