@@ -10,6 +10,8 @@ class Propellers {
 public:
   Propellers(int environment);
 
+  void calibrate();
+
   /**
    * Sets the input to the ith propeller. input is between 0 and 1, representing
    * the proportion of thrust the propeller will generate (more precisely,

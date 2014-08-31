@@ -9,7 +9,6 @@ using namespace std;
 Pca9685::Pca9685() {
   devAddr = 0x40;
   reset();
-  setPWMFreq(200);
 }
 
 void Pca9685::reset(void) {

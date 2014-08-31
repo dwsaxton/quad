@@ -19,7 +19,7 @@ I2c::I2c() {
     cerr << "Warning: attempting to create I2c twice" << endl;
     return;
   }
-  const char *filename = "/dev/i2c-0"; 
+  const char *filename = "/dev/i2c-1"; 
   file_ = open(filename, O_RDWR);
   if (file_ < 0) {
     std::cerr << "Failed to open the i2c bus" << std::endl;
@@ -189,6 +189,7 @@ int8_t I2c::readBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_
  */
 int8_t I2c::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data) {
 //     return readBytes(devAddr, regAddr, 1, data);
+  lock_guard<mutex> lock(*mutex_);
   if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
     print_error();
   }
@@ -209,6 +210,7 @@ int8_t I2c::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data) {
  */
 int8_t I2c::readWord(uint8_t devAddr, uint8_t regAddr, uint16_t *data) {
 //     return readWords(devAddr, regAddr, 1, data);
+  lock_guard<mutex> lock(*mutex_);
   if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
     print_error();
   }
@@ -313,12 +315,13 @@ bool I2c::writeBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t
  * @return Status of operation (true = success)
  */
 bool I2c::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data) {
+//   return writeBytes(devAddr, regAddr, 1, &data);
+  lock_guard<mutex> lock(*mutex_);
   if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
     print_error();
   }
   __s32 res = i2c_smbus_write_byte_data(file_, regAddr, data);
   return res == 0;
-//   return writeBytes(devAddr, regAddr, 1, &data);
 }
 
 /** Write single word to a 16-bit device register.
@@ -328,10 +331,11 @@ bool I2c::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data) {
  * @return Status of operation (true = success)
  */
 bool I2c::writeWord(uint8_t devAddr, uint8_t regAddr, uint16_t data) {
+//     return writeWords(devAddr, regAddr, 1, &data);
+  lock_guard<mutex> lock(*mutex_);
   if (ioctl(file_, I2C_SLAVE, devAddr) < 0) {
     print_error();
   }
   __s32 res = i2c_smbus_write_word_data(file_, regAddr, data);
   return res == 0;
-//     return writeWords(devAddr, regAddr, 1, &data);
 }
