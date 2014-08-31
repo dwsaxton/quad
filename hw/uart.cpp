@@ -22,21 +22,6 @@ char message_start[message_start_count] = {(char) 0x97, (char) 0xfa, (char) 0x46
 Uart::Uart(const char *name) {
   file_ = open(name, O_RDWR | O_NONBLOCK);  
 
-//   struct termios old_stdio;
-//   tcgetattr(STDOUT_FILENO, &old_stdio);
-
-  struct termios stdio;
-  memset(&stdio, 0, sizeof(stdio));
-  stdio.c_iflag=0;
-  stdio.c_oflag=0;
-  stdio.c_cflag=0;
-  stdio.c_lflag=0;
-  stdio.c_cc[VMIN]=1;
-  stdio.c_cc[VTIME]=0;
-  tcsetattr(STDOUT_FILENO, TCSANOW, &stdio);
-  tcsetattr(STDOUT_FILENO, TCSAFLUSH, &stdio);
-  fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);       // make the reads non-blocking
-
   struct termios tio;
   memset(&tio,0,sizeof(tio));
   tio.c_iflag=0;
@@ -45,24 +30,9 @@ Uart::Uart(const char *name) {
   tio.c_lflag=0;
   tio.c_cc[VMIN]=1;
   tio.c_cc[VTIME]=5;
-  cfsetospeed(&tio, B115200);            // 115200 baud
-  cfsetispeed(&tio, B115200);            // 115200 baud
+  cfsetospeed(&tio, B57600);
+  cfsetispeed(&tio, B57600);
   tcsetattr(file_, TCSANOW, &tio);
-
-//   char c = 'D';
-//   while (c!='q')
-//   {
-//     if (read(file_, &c, 1)>0) {
-//       write(STDOUT_FILENO, &c, 1);              // if new data is available on the serial port, print it out
-//     }
-//     if (read(STDIN_FILENO, &c, 1) > 0) {
-//       write(file_, &c, 1);                     // if new data is available on the console, send it to the serial port
-//     }
-//   }
-
-//   close(file_);
-//   tcsetattr(STDOUT_FILENO,TCSANOW,&old_stdio);
-//   return EXIT_SUCCESS;
 }
 
 string Uart::getMessage() {
@@ -105,6 +75,7 @@ void Uart::writeMessage(string const& message) {
   writeData(message_start, 4);
   writeData((char*) &length, 2);
   writeData(message.data(), message.size());
+  cout << "Uart message written, of length " << length << endl;
 }
 
 void Uart::writeData(const char* data, int count) {
