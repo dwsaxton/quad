@@ -20,7 +20,10 @@ const int message_start_count = 4;
 char message_start[message_start_count] = {(char) 0x97, (char) 0xfa, (char) 0x46, (char) 0x13};
 
 Uart::Uart(const char *name) {
-  file_ = open(name, O_RDWR | O_NONBLOCK);  
+  file_ = open(name, O_RDWR | O_NONBLOCK);
+  if (file_ < 0) {
+    cerr << "Warning! failed to open uart" << endl;
+  }
 
 //   struct termios old_stdio;
 //   tcgetattr(STDOUT_FILENO, &old_stdio);
@@ -45,8 +48,8 @@ Uart::Uart(const char *name) {
   tio.c_lflag=0;
   tio.c_cc[VMIN]=1;
   tio.c_cc[VTIME]=5;
-  cfsetospeed(&tio, B115200);            // 115200 baud
-  cfsetispeed(&tio, B115200);            // 115200 baud
+  cfsetospeed(&tio, B57600);
+  cfsetispeed(&tio, B57600);
   tcsetattr(file_, TCSANOW, &tio);
 
 //   char c = 'D';
@@ -71,10 +74,15 @@ string Uart::getMessage() {
   buffer_ += readData();
   // Attempt to scan buffer for a message. If a complete one found, then return it.
   for (int i = 0; i + message_start_count + 2 <= buffer_.size(); ++i) {
+    bool found_magic_start = true;
     for (int j = 0; j < 4; ++j) {
       if (buffer_.at(i+j) != message_start[j]) {
-        continue;
+        found_magic_start = false;
+        break;
       }
+    }
+    if (!found_magic_start ) {
+      continue;
     }
     // message starts at i+4;
     uint16_t length = * (uint16_t*) (buffer_.data() + i + 4);
@@ -82,6 +90,9 @@ string Uart::getMessage() {
     uint32_t end = start + length;
     if (buffer_.size() < end) {
       return string(); // haven't received all of the message yet
+    }
+    if (i > 0) {
+      cerr << "Warning: discarding bytes in Uart::getMessage()" << endl;
     }
     string message = buffer_.substr(start, length);
     if (end < buffer_.length() ) {

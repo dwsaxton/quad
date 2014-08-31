@@ -11,6 +11,7 @@
 #include "rotationplanner.h"
 #include "ssc.h"
 
+#include "controllooper.h"
 #include "hw/uart.h"
 #include <iostream>
 using namespace std;
@@ -28,6 +29,7 @@ int main(int argc, char *argv[])
 
   Globals & globals = Globals::self();
 
+  globals.controlLooper()->setRunning(false);
   Uart *uart = globals.uart();
   
   if (globals.environment() == Globals::OnBoard) {
@@ -40,8 +42,10 @@ int main(int argc, char *argv[])
       string message = uart->getMessage();
       if (!message.empty()) {
         cout << message << endl;
+      } else {
+        cout << "No message.." << endl;
       }
-      globals.sleep_us(100000);
+      globals.sleep_us(500000);
     }
   }
 
