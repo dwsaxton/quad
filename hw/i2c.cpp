@@ -2,11 +2,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#define NULL nullptr // for i2c-dev
 #include <linux/i2c-dev.h>
 #include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 
 #include <iostream>
 using namespace std;

@@ -1,0 +1,21 @@
+package Proto;
+
+message Vector3d {
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+};
+
+message Vector4d {
+  optional double w = 1;
+  optional double x = 2;
+  optional double y = 3;
+  optional double z = 4;
+};
+
+message QuadState {
+  optional Vector3d pos = 1;
+  optional Vector3d vel = 2;
+  optional Vector4d orient = 3;
+  optional Vector3d omega = 4;
+}
