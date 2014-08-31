@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <unistd.h>
 using namespace std;
 
 double unifRand( double min, double max ) {
@@ -96,7 +97,9 @@ Sensors::Sensors(int environment)
 
   if (environment == Globals::OnBoard) {
     accelerometer_ = new Adxl345();
+    accelerometer_->initialize(true);
     gyroscope_ = new Itg3200();
+    calibrate();
   } else {
     accelerometer_ = nullptr;
     gyroscope_ = nullptr;
@@ -105,15 +108,53 @@ Sensors::Sensors(int environment)
 
 void Sensors::reset()
 {
-   m_bias_a.setZero();
-   m_bias_g.setZero();
-   
-   for ( int i = 0; i < 3; ++i )
-   {
-	  m_ba[i].reset();
-	  m_bg[i].reset();
-	  m_bgps[i].reset();
-   }
+  m_bias_a.setZero();
+  m_bias_g.setZero();
+  accelerometer_bias_.setZero();
+  gyro_bias_.setZero();
+  
+  for ( int i = 0; i < 3; ++i )
+  {
+  m_ba[i].reset();
+  m_bg[i].reset();
+  m_bgps[i].reset();
+  }
+}
+
+void Sensors::calibrate() {
+  cout << "Doing Sensors calibration..." << endl;
+  const int discard_count = 40;
+  const int measure_count = 400;
+  float accel_sum_x = 0;
+  float accel_sum_y = 0;
+  float accel_sum_z = 0;
+  float gyro_sum_x = 0;
+  float gyro_sum_y = 0;
+  float gyro_sum_z = 0;
+  
+  // Collect a second or so of data
+  for (int i = 0; i < discard_count + measure_count; ++i) {
+    float x, y, z;
+    accelerometer_->getAcceleration(&x, &y, &z);
+    if (i >= discard_count) {
+      accel_sum_x += x;
+      accel_sum_y += y;
+      accel_sum_z += z;
+    }
+
+    gyroscope_->getRotation(&x, &y, &z);
+    if (i >= discard_count) {
+      gyro_sum_x += x;
+      gyro_sum_y += y;
+      gyro_sum_z += z;
+    }
+
+    usleep(5000); // wait for 5ms
+  }
+
+  accelerometer_bias_ = Vector3d(accel_sum_x / measure_count, accel_sum_y / measure_count, accel_sum_z / measure_count + GRAVITY);
+  gyro_bias_ = Vector3d(gyro_sum_x / measure_count, gyro_sum_y / measure_count, gyro_sum_z / measure_count);
+  cout << "Sensor calibration finished." << endl;
 }
 
 Vector3d stepWalk( double step, CRandomWalk *w, Vector3d x, Vector3d *bias_scale, Vector3d *bias_add )
@@ -136,7 +177,7 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
   if (accelerometer_ != nullptr) {
     float x, y, z;
     accelerometer_->getAcceleration(&x, &y, &z);
-    return Vector3d(x, y, z);
+    return Vector3d(x, y, z) - accelerometer_bias_;
   }
 
   Quad *q = Globals::self().simulatedQuad();
@@ -155,7 +196,7 @@ Vector3d Sensors::readGyroscope( double step, Vector3d *bias_scale, Vector3d *bi
   if (gyroscope_ != nullptr) {
     float x, y, z;
     gyroscope_->getRotation(&x, &y, &z);
-    return Vector3d(x, y, z);
+    return Vector3d(x, y, z) - gyro_bias_;
   }
 
   Quad *q = Globals::self().simulatedQuad();

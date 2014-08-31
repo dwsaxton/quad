@@ -48,7 +48,7 @@ void Propellers::calibrate() {
     return;
   }
 
-  cout << "Calibrating ESCs..." << endl;
+  cout << "Calibrating ESCs, please plug in your battery..." << endl;
   for (int i=0; i < 4; ++i) {
     pwm_->setPWM(i, Propellers_PWM_min + Propellers_PWM_range);
   }
@@ -58,6 +58,6 @@ void Propellers::calibrate() {
   for (int i=0; i < 4; ++i) {
     pwm_->setPWM(i, Propellers_PWM_min);
   }
-  cout << "Should be calibrated, press any button to continue!" << endl;
+  cout << "Should be soon calibrated, press any button to continue after the beep!" << endl;
   cin.get();
 }

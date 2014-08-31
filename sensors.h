@@ -81,6 +81,10 @@ public:
   void setBias_g( const Vector3d & b ) { m_bias_g = b; }
    
 private:
+  void calibrate();
+  Vector3d accelerometer_bias_;
+  Vector3d gyro_bias_;
+
   CRandomWalk m_ba[3];
   CRandomWalk m_bg[3];
   CRandomWalk m_bgps[3];

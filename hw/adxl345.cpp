@@ -32,14 +32,18 @@ THE SOFTWARE.
 
 #include "adxl345.h"
 
+#include <iostream>
+#include <unistd.h>
+using namespace std;
+
 #include "i2c.h"
 
 /** Default constructor, uses default I2C address.
  * @see ADXL345_DEFAULT_ADDRESS
  */
 Adxl345::Adxl345() {
-    devAddr = ADXL345_DEFAULT_ADDRESS;
-    initialize();
+  scale_ = 1;
+  devAddr = ADXL345_DEFAULT_ADDRESS;
 }
 
 /** Specific address constructor.
@@ -49,8 +53,8 @@ Adxl345::Adxl345() {
  * @see ADXL345_ADDRESS_ALT_HIGH
  */
 Adxl345::Adxl345(uint8_t address) {
-    devAddr = address;
-    initialize();
+  scale_ = 1;
+  devAddr = address;
 }
 
 /** Power on and prepare for general usage.
@@ -58,11 +62,51 @@ Adxl345::Adxl345(uint8_t address) {
  * after you call this method if you want it to enter standby mode, or another
  * less demanding mode of operation.
  */
-void Adxl345::initialize() {
-    I2c::writeByte(devAddr, ADXL345_RA_POWER_CTL, 0); // reset all power settings
-    setAutoSleepEnabled(true);
-    setMeasureEnabled(true);
-    setRange(0x2); // 8g range
+void Adxl345::initialize(bool calibrate) {
+  I2c::writeByte(devAddr, ADXL345_RA_POWER_CTL, 0); // reset all power settings
+
+  if (!testConnection()) {
+    cerr << "Could not establish connection with ADXL345" << endl;
+    exit(1);
+  }
+
+  setAutoSleepEnabled(false);
+  setMeasureEnabled(true);
+  setFIFOMode(ADXL345_FIFO_MODE_BYPASS);
+
+  if (calibrate) {
+    cout << "Calibrating ADXL345..." << endl;
+    setRange(ADXL345_RANGE_2G);
+    
+    // Make sure offsets are zero first. They possible always are because of above init stuff,
+    // but let's play it safe
+    setOffset(0, 0, 0);
+    
+    const int discard_count = 20;
+    const int measure_count = 80;
+    int32_t sum_x = 0;
+    int32_t sum_y = 0;
+    int32_t sum_z = 0;
+    
+    // Collect a second or so of data
+    for (int i = 0; i < discard_count + measure_count; ++i) {
+      int16_t x, y, z;
+      getAcceleration(&x, &y, &z);
+      if (i >= discard_count) {
+        sum_x += x;
+        sum_y += y;
+        sum_z += z;
+      }
+      usleep(10000); // wait for 10ms
+    }
+    int16_t offset_x = -sum_x / measure_count;
+    int16_t offset_y = -sum_y / measure_count;
+    int16_t offset_z = -256 - sum_z / measure_count; // 256 for gravity
+    setOffset(offset_x/4, offset_y/4, offset_z/4);
+    cout << "Calibration finished" << endl;
+  }
+
+  setRange(ADXL345_RANGE_4G);
 }
 
 /** Verify the I2C connection.
@@ -1495,7 +1539,23 @@ uint8_t Adxl345::getRange() {
  * @see ADXL345_FORMAT_RANGE_LENGTH
  */
 void Adxl345::setRange(uint8_t range) {
-    I2c::writeBits(devAddr, ADXL345_RA_DATA_FORMAT, ADXL345_FORMAT_RANGE_BIT, ADXL345_FORMAT_RANGE_LENGTH, range);
+  I2c::writeBits(devAddr, ADXL345_RA_DATA_FORMAT, ADXL345_FORMAT_RANGE_BIT, ADXL345_FORMAT_RANGE_LENGTH, range);
+
+  scale_ = 9.8; // TODO make this the same value as in Globals? (But want a "constants" header file or some such)
+  switch(range) {
+    case ADXL345_RANGE_2G:
+      scale_ /= 1 << 8;
+      break;
+    case ADXL345_RANGE_4G:
+      scale_ /= 1 << 7;
+      break;
+    case ADXL345_RANGE_8G:
+      scale_ /= 1 << 6;
+      break;
+    case ADXL345_RANGE_16G:
+      scale_ /= 1 << 5;
+      break;
+  }
 }
 
 // DATA* registers
@@ -1521,42 +1581,44 @@ void Adxl345::setRange(uint8_t range) {
  * @see ADXL345_RA_DATAX0
  */
 void Adxl345::getAcceleration(int16_t* x, int16_t* y, int16_t* z) {
-    I2c::readBytes(devAddr, ADXL345_RA_DATAX0, 6, buffer);
-    *x = (((int16_t)buffer[1]) << 8) | buffer[0];
-    *y = (((int16_t)buffer[3]) << 8) | buffer[2];
-    *z = (((int16_t)buffer[5]) << 8) | buffer[4];
+  I2c::readWord(devAddr, ADXL345_RA_DATAX0, (uint16_t*) x);
+  I2c::readWord(devAddr, ADXL345_RA_DATAY0, (uint16_t*) y);
+  I2c::readWord(devAddr, ADXL345_RA_DATAZ0, (uint16_t*) z);
+//   I2c::readBytes(devAddr, ADXL345_RA_DATAX0, 6, buffer);
+//   *x = (((int16_t)buffer[1]) << 8) | buffer[0];
+//   *y = (((int16_t)buffer[3]) << 8) | buffer[2];
+//   *z = (((int16_t)buffer[5]) << 8) | buffer[4];
 }
 void Adxl345::getAcceleration(float *x, float *y, float *z) {
   int16_t x_, y_, z_;
   getAcceleration(&x_, &y_, &z_);
-  float scale = 9.8 / (1 << 6); // TODO make this the same value as in Globals? (But want a "constants" header file or some such)
-  *x = scale * x_;
-  *y = scale * y_;
-  *z = scale * z_;
+  *x = scale_ * x_;
+  *y = scale_ * y_;
+  *z = scale_ * z_;
 }
 /** Get X-axis accleration measurement.
  * @return 16-bit signed X-axis acceleration value
  * @see ADXL345_RA_DATAX0
  */
 int16_t Adxl345::getAccelerationX() {
-    I2c::readBytes(devAddr, ADXL345_RA_DATAX0, 2, buffer);
-    return (((int16_t)buffer[1]) << 8) | buffer[0];
+  I2c::readBytes(devAddr, ADXL345_RA_DATAX0, 2, buffer);
+  return (((int16_t)buffer[1]) << 8) | buffer[0];
 }
 /** Get Y-axis accleration measurement.
  * @return 16-bit signed Y-axis acceleration value
  * @see ADXL345_RA_DATAY0
  */
 int16_t Adxl345::getAccelerationY() {
-    I2c::readBytes(devAddr, ADXL345_RA_DATAY0, 2, buffer);
-    return (((int16_t)buffer[1]) << 8) | buffer[0];
+  I2c::readBytes(devAddr, ADXL345_RA_DATAY0, 2, buffer);
+  return (((int16_t)buffer[1]) << 8) | buffer[0];
 }
 /** Get Z-axis accleration measurement.
  * @return 16-bit signed Z-axis acceleration value
  * @see ADXL345_RA_DATAZ0
  */
 int16_t Adxl345::getAccelerationZ() {
-    I2c::readBytes(devAddr, ADXL345_RA_DATAZ0, 2, buffer);
-    return (((int16_t)buffer[1]) << 8) | buffer[0];
+  I2c::readBytes(devAddr, ADXL345_RA_DATAZ0, 2, buffer);
+  return (((int16_t)buffer[1]) << 8) | buffer[0];
 }
 
 // FIFO_CTL register

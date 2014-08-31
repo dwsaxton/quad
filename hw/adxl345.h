@@ -160,7 +160,7 @@ public:
   Adxl345();
   Adxl345(uint8_t address);
 
-  void initialize();
+  void initialize(bool calibrate);
   bool testConnection();
 
   // DEVID register
@@ -349,6 +349,7 @@ public:
 private:
   uint8_t devAddr;
   uint8_t buffer[6];
+  float scale_;
 };
 
 #endif /* _ADXL345_H_ */
