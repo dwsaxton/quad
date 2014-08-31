@@ -27,8 +27,8 @@ void MemsImu::run() {
     mutex_.lock();
     last_acceleration_ = sensors_->readAccelerometer();
     last_angular_acceleration_ = sensors_->readGyroscope();
-    cout << "accel: " << last_acceleration_.transpose() << endl;
-    cout << "gyro: " << last_angular_acceleration_.transpose() << endl;
+//     cout << "accel: " << last_acceleration_.transpose() << endl;
+//     cout << "gyro: " << last_angular_acceleration_.transpose() << endl;
     int64_t new_time = Globals::self().currentTime_us();
     state_ = step(state_, last_acceleration_, last_angular_acceleration_, (new_time - time_) * 1e-6);
     time_ = new_time;

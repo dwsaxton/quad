@@ -5,9 +5,10 @@
 
 #include "controllooper.h"
 #include "imu.h"
+#include "hw/i2c.h"
+#include "hw/uart.h"
 #include "propellers.h"
 #include "quad.h"
-#include "hw/i2c.h"
 
 Globals &Globals::self() {
   static Globals instance;
@@ -15,14 +16,20 @@ Globals &Globals::self() {
 }
 
 Globals::Globals() {
+  simulated_quad_running_ = true;
+
   if (XOpenDisplay(NULL)) {
     environment_ = Simulation;
+    i2c_ = nullptr;
   } else {
     environment_ = OnBoard;
+    i2c_ = new I2c();
   }
 
-  simulated_quad_running_ = true;
-  i2c_ = new I2c();
+  const char *uart_usb = "/dev/ttyUSB0";
+  const char *uart_ama = "/dev/ttyAMA0";
+  uart_ = new Uart(environment_ == OnBoard ? uart_ama : uart_usb);
+
   control_looper_ = new ControlLooper();
   imu_ = new Imu(environment_);
   propellers_ = new Propellers(environment_);

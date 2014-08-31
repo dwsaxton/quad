@@ -8,10 +8,11 @@
 using namespace Eigen;
 
 class ControlLooper;
+class I2c;
 class Imu;
 class Propellers;
 class Quad;
-class I2c;
+class Uart;
 
 const double GRAVITY = 9.8;
 const Vector3d ez( 0, 0, 1 );
@@ -25,6 +26,7 @@ public:
   Propellers *propellers() const { return propellers_; }
   Quad *simulatedQuad() const { return simulated_quad_; }
   I2c *i2c() const { return i2c_; }
+  Uart *uart() const { return uart_; }
   void setSimulatedQuadRunning(bool run) { simulated_quad_running_ = run; }
 
   /**
@@ -69,6 +71,7 @@ private:
   Quad *simulated_quad_;
   I2c *i2c_;
   Environment environment_;
+  Uart *uart_;
 
   time_t initial_seconds_;
   bool simulated_quad_running_;
