@@ -21,7 +21,7 @@ I2c::I2c() {
     cerr << "Warning: attempting to create I2c twice" << endl;
     return;
   }
-  const char *filename = "/dev/i2c-0"; 
+  const char *filename = "/dev/i2c-1";
   file_ = open(filename, O_RDWR);
   if (file_ < 0) {
     std::cerr << "Failed to open the i2c bus" << std::endl;

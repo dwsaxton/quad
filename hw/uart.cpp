@@ -20,7 +20,7 @@ const int message_start_count = 4;
 char message_start[message_start_count] = {(char) 0x97, (char) 0xfa, (char) 0x46, (char) 0x13};
 
 Uart::Uart(const char *name) {
-  file_ = open(name, O_RDWR | O_NONBLOCK);
+  file_ = open(name, O_RDWR | O_NONBLOCK | O_NOCTTY);
   if (file_ < 0) {
     cerr << "Warning! failed to open uart" << endl;
   }
