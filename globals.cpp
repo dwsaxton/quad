@@ -49,9 +49,9 @@ Globals::Globals() {
 
   if (environment_ == Simulation) {
     new thread(&Globals::runSimulatedQuad, this);
-  } else {
+  } /*else {*/
     new thread(&Globals::doCommunicationLoop, this);
-  }
+//   } // TODO !THIS !
 }
 
 int64_t Globals::currentTime_us() const {

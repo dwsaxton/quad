@@ -177,7 +177,12 @@ Vector3d Sensors::readAccelerometer( double step, Vector3d *bias_scale, Vector3d
   if (accelerometer_ != nullptr) {
     float x, y, z;
     accelerometer_->getAcceleration(&x, &y, &z);
-    return Vector3d(x, y, z) - accelerometer_bias_;
+    
+    // TODO more generally need to do transformation of accelerometer and gyroscope to body frame.
+    Vector3d adjusted(x, y, z);
+    adjusted -= accelerometer_bias_;
+    adjusted[2] = -adjusted[2]; // flip z-xis.
+    return adjusted;
   }
 
   Quad *q = Globals::self().simulatedQuad();
