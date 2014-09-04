@@ -19,6 +19,7 @@ public:
   // For the following three functions, see the corresponding descriptions in
   // the Imu class.
   QuadState stateForTime(int64_t time) const;
+  QuadState lastState() const { return state_; }
   Vector3d lastAcceleration() const { return last_acceleration_; }
   Vector3d lastAngularAcceleration() const { return last_angular_acceleration_; }
   void reset();

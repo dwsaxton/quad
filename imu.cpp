@@ -10,6 +10,10 @@ Imu::~Imu() {
   delete mems_imu_;
 }
 
+QuadState Imu::lastState() const {
+  return mems_imu_->lastState();
+}
+
 QuadState Imu::stateForTime(int64_t time) const {
   return mems_imu_->stateForTime(time);
 }

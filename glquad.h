@@ -6,6 +6,7 @@
 #include <Eigen/Geometry>
 using namespace Eigen;
 
+class Quad;
 class QuadState;
 
 class GLQuad : public QGLWidget
@@ -29,7 +30,7 @@ protected:
 private:
   void setupView();
   void drawAxes();
-  void drawQuad( const QuadState & state );
+  void drawQuad(Quad *quad);
   void createMatrix( Quaterniond q, GLdouble *m );
   void drawCube( GLdouble x1, GLdouble y1, GLdouble z1, GLdouble x2, GLdouble y2, GLdouble z2 );
   void drawArrow( double length );

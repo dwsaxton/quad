@@ -159,16 +159,18 @@ void GLQuad::paintGL()
   setupView();
   drawAxes();
   drawIntercept();
-  
-  glColor3f(0.5,0.5,0.5);
-  drawQuad(Globals::self().imu()->stateForTime(Globals::self().currentTime_us()));
 
   glColor3f(0.8,0.5,0.5);
-  drawQuad(Globals::self().simulatedQuad()->state());
+  drawQuad(Globals::self().simulatedQuad());
+  glColor3f(0.5,0.5,0.5);
+  drawQuad(Globals::self().remoteQuad());
 }
 
-void GLQuad::drawQuad( const QuadState & state )
+void GLQuad::drawQuad(Quad *quad)
 {
+  QuadState state = quad->state();
+  Vector4d prop_input = quad->propInput();
+
    glPushMatrix();
    
    glTranslated( state.pos.x(), state.pos.y(), state.pos.z() );
@@ -200,23 +202,22 @@ void GLQuad::drawQuad( const QuadState & state )
    drawCube(-0.5*scale,0.5*scale,-3*scale,-1*scale,-0.5*scale,0.5*scale);
    drawCube(-0.5*scale,0.5*scale,1*scale,3*scale,-0.5*scale,0.5*scale);
    
-   Vector4d o = Globals::self().simulatedQuad()->propInput();
    double s = 4 *scale;
    
    glTranslated( 2.5*scale, 0, 0 );
-   drawArrow( -o[0]*s );
+   drawArrow( -prop_input[0]*s );
 //    renderText( 1.2*scale, 0, 0, "1" );
    
    glTranslated( -2.5*scale, 2.5*scale, 0 );
-   drawArrow( -o[1]*s );
+   drawArrow( -prop_input[1]*s );
 //    renderText( 0, 1.2*scale, 0, "2" );
    
    glTranslated( -2.5*scale, -2.5*scale, 0 );
-   drawArrow( -o[2]*s );
+   drawArrow( -prop_input[2]*s );
 //    renderText( -1.2*scale, 0, 0, "3" );
    
    glTranslated( 2.5*scale, -2.5*scale, 0 );
-   drawArrow( -o[3]*s );
+   drawArrow( -prop_input[3]*s );
 //    renderText( 0, -1.2*scale, 0, "4" );
    
    glPopMatrix();

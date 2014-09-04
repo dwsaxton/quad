@@ -13,6 +13,11 @@ public:
   ~Imu();
 
   /**
+   * Returns the last updated-to state.
+   */
+  QuadState lastState() const;
+
+  /**
    * Return a best guess for the quad state at the given time, which should be
    * in the future (possibly works if in past as well, as long as not too far).
    * This function  is implemented with the expectation that time is at most

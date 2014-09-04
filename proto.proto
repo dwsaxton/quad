@@ -1,21 +1,41 @@
 package Proto;
 
-message Vector3d {
-  optional double x = 1;
-  optional double y = 2;
-  optional double z = 3;
-};
+message Message {
 
-message Vector4d {
-  optional double w = 1;
-  optional double x = 2;
-  optional double y = 3;
-  optional double z = 4;
-};
+  enum Type {
+    TYPE_QUAD_UPDATE = 1;
+  };
 
-message QuadState {
-  optional Vector3d pos = 1;
-  optional Vector3d vel = 2;
-  optional Vector4d orient = 3;
-  optional Vector3d omega = 4;
-}
+  optional Type type = 1;
+
+  message Vector3d {
+    optional double x = 1;
+    optional double y = 2;
+    optional double z = 3;
+  };
+
+  message Vector4d {
+    optional double w = 1;
+    optional double x = 2;
+    optional double y = 3;
+    optional double z = 4;
+  };
+
+  message Quaterniond {
+    optional double w = 1;
+    optional double x = 2;
+    optional double y = 3;
+    optional double z = 4;
+  };
+
+  message QuadState {
+    optional Vector3d pos = 1;
+    optional Vector3d vel = 2;
+    optional Quaterniond orient = 3;
+    optional Vector3d omega = 4;
+  }
+
+  optional QuadState quad_state = 2;
+  optional Vector4d prop_input = 3;
+
+};

@@ -39,9 +39,9 @@ void MemsImu::run() {
 
 QuadState MemsImu::stateForTime(int64_t time) const {
   lock_guard<mutex> lock(mutex_);
-  // TODO this!!!
-  return step(Globals::self().simulatedQuad()->state(), last_acceleration_, last_angular_acceleration_, (time - time_) * 1e-6);
-//   return step(state_, last_acceleration_, last_angular_acceleration_, (time - time_) * 1e-6);
+//   // TODO this!!!
+//   return step(Globals::self().simulatedQuad()->state(), last_acceleration_, last_angular_acceleration_, (time - time_) * 1e-6);
+  return step(state_, last_acceleration_, last_angular_acceleration_, (time - time_) * 1e-6);
 }
 
 QuadState MemsImu::step(QuadState const& initial, Vector3d const& accel_reading, Vector3d const& gyro_reading, double t) const {

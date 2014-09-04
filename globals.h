@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include <stdint.h>
+#include <string>
 #include <time.h>
 
 #include <Eigen/Geometry>
@@ -24,7 +25,16 @@ public:
   ControlLooper *controlLooper() const { return control_looper_; }
   Imu *imu() const { return imu_; }
   Propellers *propellers() const { return propellers_; }
+  /**
+   * When we are in a simulation environment (running on a laptop), this is the
+   * simulated quad.
+   */
   Quad *simulatedQuad() const { return simulated_quad_; }
+  /**
+   * When we are running on a laptop in Receiving environment, this is the
+   * state of the remote quad.
+   */
+  Quad *remoteQuad() const { return remote_quad_; }
   I2c *i2c() const { return i2c_; }
   Uart *uart() const { return uart_; }
   void setSimulatedQuadRunning(bool run) { simulated_quad_running_ = run; }
@@ -62,13 +72,23 @@ public:
   Environment environment() const { return environment_; }
 
 private:
-  void runSimulatedQuad();
   Globals();
+  void runSimulatedQuad();
+  /**
+   * Send and receive messages from the other device (be it the laptop or the
+   * quad depending on which device this is).
+   */
+  void doCommunicationLoop();
+  /**
+   * Interpret a received message.
+   */
+  void handleMessage(std::string const& message);
 
   ControlLooper *control_looper_;
   Imu *imu_;
   Propellers *propellers_;
   Quad *simulated_quad_;
+  Quad *remote_quad_;
   I2c *i2c_;
   Environment environment_;
   Uart *uart_;
