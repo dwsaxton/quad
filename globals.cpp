@@ -168,6 +168,10 @@ void Globals::doCommunicationLoop() {
       proto_message.set_type(Proto::Message::Type::Message_Type_TYPE_QUAD_UPDATE);
       *proto_message.mutable_prop_input() = protoTranslate(propellers_->input());;
       *proto_message.mutable_quad_state() = protoTranslate(imu_->lastState());
+      ostringstream stream;
+      proto_message.SerializeToOstream(&stream);
+      uart_->writeMessage(stream.str());
+      cout << "Sent message with quad update" << endl;
     }
   }
 }
@@ -179,12 +183,18 @@ void Globals::handleMessage(string const& message) {
     return;
   }
   switch (proto_message.type()) {
-    case Proto::Message::Type::Message_Type_TYPE_QUAD_UPDATE:
+    case Proto::Message::Type::Message_Type_TYPE_QUAD_UPDATE: {
+      cout << "Handling proto-update message" << endl;
       QuadState quad_state = protoTranslate(proto_message.quad_state());
       Vector4d prop_input = protoTranslate(proto_message.prop_input());
       remote_quad_->setState(quad_state);
       remote_quad_->setPropInput(prop_input);
       break;
+    }
+    default: {
+      cerr << "Unknown message type in Globals::handleMessage" << endl;
+      break;
+    }
   }
 }
 
