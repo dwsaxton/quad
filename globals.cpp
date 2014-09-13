@@ -75,10 +75,22 @@ void Globals::sleepUntil_us(int64_t time) const {
   sleep_us(time - current);
 }
 
+void Globals::setSimulationRunning(bool run) {
+  assert(isSimulation());
+  simulated_quad_running_ = run;
+  imu_->setUpdating(run);
+}
+
 void Globals::reset() {
-  // TODO implement
-  simulated_quad_->reset();
+  if (isSimulation()) {
+    simulated_quad_->reset();
+    setSimulationRunning(false);
+  }
   imu_->reset();
+  propellers_->reset();
+  if (remote_quad_ != nullptr) {
+    remote_quad_->reset();
+  }
 }
 
 void Globals::runSimulatedQuad() {

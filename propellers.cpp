@@ -61,3 +61,9 @@ void Propellers::calibrate() {
   cout << "Should be soon calibrated, press any button to continue after the beep!" << endl;
   cin.get();
 }
+
+void Propellers::reset() {
+  for (int i = 0; i < 4; ++i) {
+    setInput(i, 0);
+  }
+}

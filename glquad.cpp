@@ -6,6 +6,7 @@
 #include "path.h"
 #include "quad.h"
 #include "imu.h"
+#include "propellers.h"
 
 #include <QtGui>
 #include <QtOpenGL>
@@ -161,16 +162,17 @@ void GLQuad::paintGL()
   drawIntercept();
 
   glColor3f(0.8,0.5,0.5);
-  drawQuad(Globals::self().simulatedQuad());
+  Quad *quad = Globals::self().simulatedQuad();
+  drawQuad(quad->state(), quad->propInput());
+  glColor3f(0.5,0.5,0.8);
+  drawQuad(Globals::self().imu()->lastState(), Globals::self().propellers()->input());
   glColor3f(0.5,0.5,0.5);
-  drawQuad(Globals::self().remoteQuad());
+  quad = Globals::self().remoteQuad();
+  drawQuad(quad->state(), quad->propInput());
 }
 
-void GLQuad::drawQuad(Quad *quad)
+void GLQuad::drawQuad(QuadState const& state, Vector4d const& prop_input)
 {
-  QuadState state = quad->state();
-  Vector4d prop_input = quad->propInput();
-
    glPushMatrix();
    
    glTranslated( state.pos.x(), state.pos.y(), state.pos.z() );

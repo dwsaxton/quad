@@ -22,6 +22,7 @@ public:
   QuadState lastState() const { return state_; }
   Vector3d lastAcceleration() const { return last_acceleration_; }
   Vector3d lastAngularAcceleration() const { return last_angular_acceleration_; }
+  void setUpdating(bool updating) { updating_ = updating; }
   void reset();
 
 private:
@@ -29,6 +30,7 @@ private:
   QuadState step(QuadState const& initial, Vector3d const& accel_reading, Vector3d const& gyro_reading, double t) const;
   void integrate(QuadState& state, const Vector3d& accel, double t) const;
 
+  bool updating_;
   int64_t time_;
   QuadState state_;
   Vector3d last_acceleration_;

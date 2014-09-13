@@ -15,15 +15,16 @@ public:
   
 private Q_SLOTS:
   void updateLabels();
-  void propInputsChanged();
-  void resetQuad();
-  void runPauseQuad();
+
+  void onRunPauseSimulationClicked();
   void setControlAutomatic(bool automatic);
+  void onAutoGoClicked();
+  void onPropSlidersAdjusted();
+  void onResetClicked();
   
 private:
-  double propInput( int i ) const;
+  double propInput(int i) const;
   QSlider *m_propInputs[4];
-  bool is_running_;
   bool control_automatic_;
 };
 

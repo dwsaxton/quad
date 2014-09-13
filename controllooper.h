@@ -17,19 +17,16 @@ const double MaxPitchAcceleration = 30;
 
 class HigherController;
 
-// double unifRand( double min, double max );
-
 class ControlLooper : public thread {
    
 public:
   ControlLooper();
   ~ControlLooper();
 
-//   HigherController *controller() const { return m_controller; }
-//    Vector3d wind() const { return m_wind; }
-
   bool isRunning() const { return is_running_; }
   void setRunning(bool running);
+
+  HigherController *controller() const { return m_controller; }
 
 private:
   void run();
@@ -39,9 +36,6 @@ private:
   bool is_running_;
   Vector4d next_input_;
   bool next_input_waiting_; // set to true when next_input_ is waiting to be sent to the propellers
-
-//   void stepWind();
-//   Vector3d m_wind;
 };
 
 #endif

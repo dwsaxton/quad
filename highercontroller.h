@@ -25,6 +25,10 @@ public:
    * Calculate the necessary propeller inputs given the current quad state.
    */
   Vector4d getPropInputs(QuadState const& state, Vector4d const& last_inputs);
+  /**
+   * Sets the target position to fly to.
+   */
+  void setTargetPos(Vector3d const& target_pos) { target_pos_ = target_pos; }
 
 private:
   Quadratic3d stateTargetToQuadratic() const;

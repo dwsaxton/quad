@@ -29,6 +29,11 @@ public:
    */
   Vector4d input() const { return input_; }
 
+  /**
+   * Sets all the inputs to zero.
+   */
+  void reset();
+
 private:
   Vector4d input_; // the last set input
   Pca9685 *pwm_;

@@ -5,6 +5,7 @@ using namespace std;
 
 #include "controller.h"
 #include "controllooper.h"
+#include "globals.h"
 #include "quadraticintercept.h"
 #include "rotationplanner.h"
 
@@ -19,8 +20,8 @@ Vector4d HigherController::getPropInputs(const QuadState& state, const Vector4d&
 
   LinearPlanner3d sqi;
   shared_ptr<Path> intercept = interceptForTarget(state, &sqi);
-//   quad->path_ = intercept; // TODO un-comment this
-//   quad->intercept = sqi; // TODO And this as well
+  Globals::self().simulatedQuad()->path_ = intercept; // TODO un-comment this
+  Globals::self().simulatedQuad()->intercept = sqi; // TODO And this as well
 
   prev_intercept_duration_ = intercept->duration();
 

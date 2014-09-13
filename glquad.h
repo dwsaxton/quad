@@ -30,7 +30,7 @@ protected:
 private:
   void setupView();
   void drawAxes();
-  void drawQuad(Quad *quad);
+  void drawQuad(const QuadState& state, const Vector4d& prop_input);
   void createMatrix( Quaterniond q, GLdouble *m );
   void drawCube( GLdouble x1, GLdouble y1, GLdouble z1, GLdouble x2, GLdouble y2, GLdouble z2 );
   void drawArrow( double length );

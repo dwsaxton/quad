@@ -29,3 +29,7 @@ Vector3d Imu::lastAngularAcceleration() const {
 void Imu::reset() {
   mems_imu_->reset();
 }
+
+void Imu::setUpdating(bool updating) {
+  mems_imu_->setUpdating(updating);
+}

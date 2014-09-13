@@ -38,6 +38,7 @@ public:
   Vector3d lastAngularAcceleration() const;
 
   void reset();
+  void setUpdating(bool updating);
 
 private:
   MemsImu *mems_imu_;

@@ -11,6 +11,7 @@ using namespace std;
 const int refresh_us = 10000; // 10 ms
 
 MemsImu::MemsImu(int environment) {
+  updating_ = true;
   sensors_ = new Sensors(environment);
   last_acceleration_.setZero();
   last_angular_acceleration_.setZero();
@@ -30,7 +31,9 @@ void MemsImu::run() {
 //     cout << "accel: " << last_acceleration_.transpose() << endl;
 //     cout << "gyro: " << last_angular_acceleration_.transpose() << endl;
     int64_t new_time = Globals::self().currentTime_us();
-    state_ = step(state_, last_acceleration_, last_angular_acceleration_, (new_time - time_) * 1e-6);
+    if (updating_) {
+      state_ = step(state_, last_acceleration_, last_angular_acceleration_, (new_time - time_) * 1e-6);
+    }
     time_ = new_time;
     mutex_.unlock();
     Globals::self().sleepUntil_us(start_time + iteration * refresh_us);

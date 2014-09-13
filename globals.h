@@ -37,7 +37,8 @@ public:
   Quad *remoteQuad() const { return remote_quad_; }
   I2c *i2c() const { return i2c_; }
   Uart *uart() const { return uart_; }
-  void setSimulatedQuadRunning(bool run) { simulated_quad_running_ = run; }
+  void setSimulationRunning(bool run);
+  bool isSimulatedQuadRunning() const { return simulated_quad_running_; }
 
   /**
    * Return a monotonically increasing time from some arbitrary point, in
@@ -55,7 +56,7 @@ public:
   void sleepUntil_us(int64_t time) const;
 
   /**
-   * Resets everything (TODO does this function actually make sense?)
+   * Resets all states back to zero.
    */
   void reset();
 
@@ -70,6 +71,11 @@ public:
    * or in a simulation environment, or receiving quad information.
    */
   Environment environment() const { return environment_; }
+
+  /**
+   * Convenience function.
+   */
+  bool isSimulation() const { return environment_ == Globals::Simulation; }
 
 private:
   Globals();
