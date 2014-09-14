@@ -1,16 +1,33 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef MEMSIMU_H
+#define MEMSIMU_H
+
+#include <mutex>
+#include <stdint.h>
+using namespace std;
 
 #include <Eigen/Geometry>
 using namespace Eigen;
 
-class MemsImu;
-class QuadState;
+#include "quadstate.h"
 
+class Sensors;
+
+class SavedState {
+public:
+  int64_t time;
+  QuadState state;
+};
+
+/**
+ * IMU integrates input from the MEMS sensors together with position and orientation estimation
+ * from a camera to obtain an estimate of the quad state. The camera is used to periodically
+ * update the position and orientation to a more accurate value without drift, and, by maintaining
+ * two saved states, we can also update the estimate on the velocity which is also subject to
+ * drift.
+ */
 class Imu {
 public:
   Imu(int environment);
-  ~Imu();
 
   /**
    * Returns the last updated-to state.
@@ -37,11 +54,31 @@ public:
    */
   Vector3d lastAngularAcceleration() const;
 
+  void setUpdating(bool updating) { updating_ = updating; }
   void reset();
-  void setUpdating(bool updating);
 
 private:
-  MemsImu *mems_imu_;
+  void run();
+  void cameraRun();
+  QuadState step(QuadState const& initial, Vector3d const& accel_reading, Vector3d const& gyro_reading, double t) const;
+  void integrate(QuadState& state, const Vector3d& accel, double t) const;
+
+  bool updating_;
+  SavedState state_;
+  Vector3d last_acceleration_;
+  Vector3d last_angular_acceleration_;
+  Sensors *sensors_;
+
+  /**
+   * This is used when we have a camera snapshot, so that once we have established our position
+   * and orientation from the camera shot (which takes some processing time), we are able to
+   * calculate the difference and add this onto our current state to obtain a better estimate for
+   * our current state.
+   */
+  SavedState state_at_camera_save_;
+
+  mutable mutex mutex_;
+  mutable QuadState k1_;
 };
 
-#endif // IMU_H
+#endif // MEMSIMU_H
